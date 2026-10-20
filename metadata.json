@@ -1,0 +1,10 @@
+{
+  "name": "Al-Firasat AI - Fisiognomi Karakter Imam Ar-Razi",
+  "description": "Aplikasi analisis karakter berdasarkan ciri-ciri fisik dan pemindaian wajah real-time berbasis Kitab Al-Firasat karya Imam Fakhruddin Ar-Razi lengkap dengan basis data histori dan panduan interpretasi.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

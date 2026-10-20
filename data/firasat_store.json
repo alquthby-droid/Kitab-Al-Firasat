@@ -1,0 +1,336 @@
+{
+  "profiles": [
+    {
+      "id": "prof-1792402883797",
+      "name": "Husni",
+      "category": "Keluarga",
+      "avatarUrl": "",
+      "notes": "",
+      "createdAt": "2026-10-19T09:41:20.415Z",
+      "lastAnalysisDate": null,
+      "analysisCount": 0,
+      "monitoringIntervalDays": 14,
+      "nextReviewDate": "2026-11-02T09:41:23.797Z"
+    },
+    {
+      "id": "prof-1",
+      "name": "Ahmad Al-Farabi",
+      "category": "Rekan Kerja",
+      "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
+      "notes": "Partner riset dan kepenulisan. Memiliki daya konsentrasi tinggi dan kepribadian tenang.",
+      "createdAt": "2026-09-24T03:27:00.111Z",
+      "lastAnalysisDate": "2026-10-14T03:27:00.111Z",
+      "analysisCount": 3,
+      "monitoringIntervalDays": 14,
+      "nextReviewDate": "2026-10-28T03:27:00.111Z"
+    },
+    {
+      "id": "prof-2",
+      "name": "Zaid bin Khalid",
+      "category": "Partner Bisnis",
+      "avatarUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80",
+      "notes": "Pebisnis ekspedisi. Berani mengambil risiko, bicara lugas, berjiwa pemimpin.",
+      "createdAt": "2026-09-09T03:27:00.111Z",
+      "lastAnalysisDate": "2026-10-16T10:15:00.000Z",
+      "analysisCount": 2,
+      "monitoringIntervalDays": 30,
+      "nextReviewDate": "2026-11-15T10:15:00.000Z"
+    }
+  ],
+  "history": [
+    {
+      "id": "hist-1-a",
+      "profileId": "prof-1",
+      "subjectName": "Ahmad Al-Farabi",
+      "timestamp": "2026-09-24T03:27:00.111Z",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80",
+      "sourceType": "sample",
+      "dominantMizaj": "sanguinis",
+      "mizajScores": {
+        "sanguinis": 42,
+        "koleris": 32,
+        "melankolis": 16,
+        "flegmatis": 10
+      },
+      "iTidalStatus": "Cenderung Panas-Lembap",
+      "ageStage": "Paruh Baya (Kuhulah)",
+      "features": [
+        {
+          "organ": "Dahi",
+          "arabicName": "الجبهة",
+          "observation": "Dahi sedikit berkerut di tengah karena beban telaah naskah",
+          "kitabRef": "Pembahasan 3, Pasal 1",
+          "traitIndication": "Pemikiran aktif namun terdapat sedikit kelelahan mental",
+          "humorEffect": "Panas empedu agak meninggi",
+          "confidence": 90
+        }
+      ],
+      "overallSummary": {
+        "primaryStrengths": ["Kecerdasan nalar", "Fokus penelitian"],
+        "potentialWeaknesses": ["Ketegangan saraf ringan"],
+        "naturalInclination": "Mizaj Sanguinis yang mulai terdorong Koleris akibat keletihan fisik.",
+        "tarjihNote": "Sinyal mata lebih kuat dari kerut dahi sementara.",
+        "spiritualAdvice": "Disarankan relaksasi pernapasan dan istirahat seimbang."
+      },
+      "classicalQuote": {
+        "chapter": "Bab I: Keseimbangan Fisik",
+        "arabicText": "اعتدال المزاج يوجب اعتدال الأخلاق",
+        "indonesianTranslation": "Keseimbangan temperamen niscaya melahirkan keseimbangan akhlak budi pekerti.",
+        "context": "Prinsip dasar keselarasan jiwa dan raga dalam Kitab Al-Firasat."
+      },
+      "notes": "Observasi dasar (baseline). Direkomendasikan riyadhah ketenangan."
+    },
+    {
+      "id": "hist-1-b",
+      "profileId": "prof-1",
+      "subjectName": "Ahmad Al-Farabi",
+      "timestamp": "2026-10-04T03:27:00.111Z",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80",
+      "sourceType": "sample",
+      "dominantMizaj": "sanguinis",
+      "mizajScores": {
+        "sanguinis": 45,
+        "koleris": 27,
+        "melankolis": 18,
+        "flegmatis": 10
+      },
+      "iTidalStatus": "Mu'tadil (Mendekati Keseimbangan Ideal)",
+      "ageStage": "Paruh Baya (Kuhulah)",
+      "features": [
+        {
+          "organ": "Dahi",
+          "arabicName": "الجبهة",
+          "observation": "Dahi mulai rileks, kerutan tengah menghilang",
+          "kitabRef": "Pembahasan 3, Pasal 1",
+          "traitIndication": "Ketenangan batin meningkat, konsentrasi stabil",
+          "humorEffect": "Hararah Mu'tadilah",
+          "confidence": 92
+        }
+      ],
+      "overallSummary": {
+        "primaryStrengths": ["Ketenangan nalar", "Stabilitas emosi"],
+        "potentialWeaknesses": ["Kecenderungan perfeksionis"],
+        "naturalInclination": "Karakter menuju I'tidal optimal.",
+        "tarjihNote": "Harmonisasi raut wajah semakin nyata.",
+        "spiritualAdvice": "Lanjutkan wirid tafakkur hening."
+      },
+      "classicalQuote": {
+        "chapter": "Bab I: Sifat Mu'tadil",
+        "arabicText": "صاحب المزاج المعتدل أحسن الناس خلقا",
+        "indonesianTranslation": "Pemilik temperamen yang seimbang adalah manusia yang paling mulia akhlaknya.",
+        "context": "Imam Fakhruddin Ar-Razi memuji orang yang menjaga keseimbangan humornya."
+      },
+      "notes": "Observasi kedua: Terlihat peningkatan ketenangan dan penurunan tensi koleris."
+    },
+    {
+      "id": "hist-1",
+      "profileId": "prof-1",
+      "subjectName": "Ahmad Al-Farabi",
+      "timestamp": "2026-10-14T03:27:00.111Z",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80",
+      "sourceType": "sample",
+      "dominantMizaj": "sanguinis",
+      "mizajScores": {
+        "sanguinis": 48,
+        "koleris": 24,
+        "melankolis": 18,
+        "flegmatis": 10
+      },
+      "iTidalStatus": "Mu'tadil (Seimbang)",
+      "ageStage": "Paruh Baya (Kuhulah)",
+      "features": [
+        {
+          "organ": "Dahi",
+          "arabicName": "الجبهة",
+          "observation": "Dahi seimbang, luas menonjol depan-belakang, bebas kerut tegang",
+          "kitabRef": "Pembahasan 3, Pasal 1 (hal. 162)",
+          "traitIndication": "Kapasitas nalar jernih, memori prima, berpikiran terbuka",
+          "humorEffect": "Kehangatan seimbang (Hararah Mu'tadilah)",
+          "confidence": 94
+        },
+        {
+          "organ": "Mata",
+          "arabicName": "العين",
+          "observation": "Sorot mata syahlah tenang, pandangan lurus berwibawa",
+          "kitabRef": "Pembahasan 3, Pasal 3 (hal. 164-169)",
+          "associatedAnimal": "Singa & Elang",
+          "traitIndication": "Jiwa mulia, kepemimpinan bijaksana, tidak mudah terprovokasi",
+          "humorEffect": "Pertengahan antara panas dan dingin",
+          "confidence": 96
+        },
+        {
+          "organ": "Hidung",
+          "arabicName": "الأنف",
+          "observation": "Batang hidung lurus proporsional dengan lengkung lembut di pucuk",
+          "kitabRef": "Pembahasan 3, Pasal 4 (hal. 173-175)",
+          "traitIndication": "Harga diri tinggi, berjiwa adil, menjunjung kehormatan",
+          "humorEffect": "Sirkulasi napas seimbang",
+          "confidence": 90
+        },
+        {
+          "organ": "Bibir & Mulut",
+          "arabicName": "الفم والشفة",
+          "observation": "Bibir menutup rapat teratur, sudut simetris",
+          "kitabRef": "Pembahasan 3, Pasal 5 (hal. 176-177)",
+          "traitIndication": "Pandai menjaga rahasia, tutur kata diplomatis dan santun",
+          "humorEffect": "Lembap teratur",
+          "confidence": 91
+        }
+      ],
+      "overallSummary": {
+        "primaryStrengths": [
+          "Kemampuan komunikasi prima",
+          "Daya analisis seimbang",
+          "Kecerdasan emosional stabil"
+        ],
+        "potentialWeaknesses": [
+          "Kadang terlalu perfeksionis terhadap keteraturan",
+          "Mudah lelah jika lingkungan bising"
+        ],
+        "naturalInclination": "Karakter ideal (Al-Mizaj al-Mu'tadil) yang mampu menjadi jembatan perdamaian dan perencana strategis.",
+        "tarjihNote": "Sinyal dari ketenangan sorot mata dan keluasan dahi saling memperkuat indikasi kematangan akal budi.",
+        "spiritualAdvice": "Pertahankan wirid tafakkur dan sedekah tersembunyi untuk menjaga kesucian nûr al-firasah."
+      },
+      "classicalQuote": {
+        "chapter": "Bab I: Tanda-tanda Kepribadian Ideal",
+        "arabicText": "إن كان حسن الشكل كان معتدل المزاج فصاحبه نبيل النفس سديد الرأي",
+        "indonesianTranslation": "Jika bentuk fisiknya serasi dan temperamennya seimbang, maka pemiliknya memiliki jiwa yang luhur dan pandangan yang tepat.",
+        "context": "Imam Fakhruddin Ar-Razi menegaskan bahwa keseimbangan bentuk fisik mencerminkan keadilan tabiat batiniah."
+      },
+      "notes": "Observasi ketiga menunjukkan kestabilan tinggi. Dijadwalkan peninjauan ulang dalam 14 hari."
+    },
+    {
+      "id": "hist-2-a",
+      "profileId": "prof-2",
+      "subjectName": "Zaid bin Khalid",
+      "timestamp": "2026-09-25T10:15:00.000Z",
+      "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=80",
+      "sourceType": "sample",
+      "dominantMizaj": "koleris",
+      "mizajScores": {
+        "sanguinis": 18,
+        "koleris": 60,
+        "melankolis": 12,
+        "flegmatis": 10
+      },
+      "iTidalStatus": "Koleris Ghalib Tinggi (Dominan Api)",
+      "ageStage": "Muda Matang (Syabab)",
+      "features": [
+        {
+          "organ": "Mata",
+          "arabicName": "العين",
+          "observation": "Sorot mata sangat tajam dan berkilat merah",
+          "kitabRef": "Pembahasan 3, Pasal 3",
+          "traitIndication": "Sangat cepat bereaksi, keberanian berlebih",
+          "humorEffect": "Panas empedu tinggi",
+          "confidence": 94
+        }
+      ],
+      "overallSummary": {
+        "primaryStrengths": ["Keberanian tanpa ragu", "Inisiatif agresif"],
+        "potentialWeaknesses": ["Cepat marah", "Kurang sabar"],
+        "naturalInclination": "Koleris murni.",
+        "tarjihNote": "Dominasi unsur api terbukti dari sorot mata.",
+        "spiritualAdvice": "Perbanyak wudhu air sejuk dan latihan mendengarkan."
+      },
+      "classicalQuote": {
+        "chapter": "Bab II: Sifat Pemberani",
+        "arabicText": "من غلبت عليه الصفراء كان سريع الغضب سريع الفيء",
+        "indonesianTranslation": "Barangsiapa didominasi empedu kuning niscaya ia lekas marah namun lekas pula kembali sadar.",
+        "context": "Karakter dasar Mizaj Shafrawi menurut Ar-Razi."
+      },
+      "notes": "Observasi awal Zaid bin Khalid. Ambisius dan berdaya juang tinggi."
+    },
+    {
+      "id": "hist-2",
+      "profileId": "prof-2",
+      "subjectName": "Zaid bin Khalid",
+      "timestamp": "2026-10-16T10:15:00.000Z",
+      "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=80",
+      "sourceType": "sample",
+      "dominantMizaj": "koleris",
+      "mizajScores": {
+        "sanguinis": 22,
+        "koleris": 52,
+        "melankolis": 14,
+        "flegmatis": 12
+      },
+      "iTidalStatus": "Koleris Ghalib (Dominan Api & Kepemimpinan)",
+      "ageStage": "Muda Matang (Syabab)",
+      "features": [
+        {
+          "organ": "Dahi",
+          "arabicName": "الجبهة",
+          "observation": "Dahi berkontur tegas dengan pembuluh pelipis terlihat aktif",
+          "kitabRef": "Pembahasan 3, Pasal 1 (hal. 162)",
+          "traitIndication": "Kemauan keras, pantang menyerah, fokus eksekusi target tinggi",
+          "humorEffect": "Panas dan Kering (Hararah wa Yubusah)",
+          "confidence": 92
+        },
+        {
+          "organ": "Mata",
+          "arabicName": "العين",
+          "observation": "Sorot mata tajam berkilat kemerahan halus, tatapan lekat menembus",
+          "kitabRef": "Pembahasan 3, Pasal 3 (hal. 165)",
+          "associatedAnimal": "Rajawali & Macan Tutul",
+          "traitIndication": "Keberanian luar biasa, kewaspadaan tinggi, jiwa pelindung tegas",
+          "humorEffect": "Dominasi Empedu Kuning (Al-Murrah ash-Shafra)",
+          "confidence": 95
+        },
+        {
+          "organ": "Hidung",
+          "arabicName": "الأنف",
+          "observation": "Batang hidung kokoh agak elang (Aqna'), cuping tebal mengembang",
+          "kitabRef": "Pembahasan 3, Pasal 4 (hal. 174)",
+          "associatedAnimal": "Elang Pemburu",
+          "traitIndication": "Ambisi kepemimpinan, tidak suka diperintah semena-mena",
+          "humorEffect": "Napas dalam dan panas",
+          "confidence": 89
+        },
+        {
+          "organ": "Rahang & Dagu",
+          "arabicName": "الذقن واللحي",
+          "observation": "Rahang persegi bertenaga, dagu menonjol kokoh",
+          "kitabRef": "Pembahasan 3, Pasal 7 (hal. 180)",
+          "traitIndication": "Daya tahan fisik prima, ketahanan menghadapi krisis",
+          "humorEffect": "Keringat aktif",
+          "confidence": 93
+        }
+      ],
+      "overallSummary": {
+        "primaryStrengths": [
+          "Keberanian eksekusi tingkat tinggi",
+          "Ketegasan dalam mengambil komando",
+          "Keuletan menghadapi persaingan keras"
+        ],
+        "potentialWeaknesses": [
+          "Mudah terusik jika terjadi kelambanan",
+          "Perlu melatih kesabaran dalam negosiasi halus"
+        ],
+        "naturalInclination": "Karakter pejuang dan pionir (Qiyadi Thabi'i) yang unggul dalam memimpin ekspedisi atau memecahkan kebuntuan.",
+        "tarjihNote": "Ciri mata elang dan rahang kokoh secara qath'i (pasti) mengukuhkan sifat Koleris murni menurut kaidah Ar-Razi.",
+        "spiritualAdvice": "Banyak berwudhu dengan air dingin dan memperbanyak zikir istighfar untuk mendinginkan gejolak amarah."
+      },
+      "classicalQuote": {
+        "chapter": "Bab II: Sifat-sifat Pemberani",
+        "arabicText": "من كانت عينه حمراء براقة وصدره عريضا فهو شجاع مقدام",
+        "indonesianTranslation": "Barangsiapa matanya tajam berkilau dan dadanya lapang, niscaya ia adalah pemberani yang siap melangkah maju.",
+        "context": "Kaidah Imam Ar-Razi mengenai hubungan antara panas jantung dan keberanian fisik."
+      },
+      "notes": "Profil pebisnis tangguh. Disarankan bersinergi dengan tipe analitis atau diplomatik."
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif-1",
+      "profileId": "prof-1",
+      "profileName": "Ahmad Al-Farabi",
+      "scheduledDate": "2026-10-14T03:27:00.111Z",
+      "dueDate": "2026-10-28T03:27:00.111Z",
+      "title": "Jadwal Pemantauan Berkala: Ahmad Al-Farabi",
+      "message": "Sudah saatnya melakukan peninjauan perkembangan karakter dan ketenangan raut wajah setelah 14 hari.",
+      "status": "pending",
+      "createdAt": "2026-10-19T03:27:00.111Z"
+    }
+  ]
+}
