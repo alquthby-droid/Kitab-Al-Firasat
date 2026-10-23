@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { 
   X, 
   Sparkles, 
@@ -21,7 +22,9 @@ import {
   Volume2,
   VolumeX,
   Hand,
-  Activity
+  Activity,
+  ScanLine,
+  User
 } from 'lucide-react';
 import { FirasatAnalysisResult, SubjectProfile } from '../types/firasat';
 import { MIZAJ_DATA } from '../data/kitabFirasatData';
@@ -56,8 +59,10 @@ export const AnalysisResultModal: React.FC<AnalysisResultModalProps> = ({
   const [scheduleNote, setScheduleNote] = useState<string>('Evaluasi berkala kestabilan karakter dan ketenangan raut wajah.');
   const [scheduleSaved, setScheduleSaved] = useState<boolean>(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
+  const [pdfProgressText, setPdfProgressText] = useState<string>('');
   const [isNarrating, setIsNarrating] = useState<boolean>(false);
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
+  const faceScanCardRef = useRef<HTMLDivElement>(null);
 
   // Subscribe to TTS changes
   React.useEffect(() => {
@@ -140,17 +145,44 @@ Nasihat jiwa dan riyadhah: ${result.overallSummary.spiritualAdvice}.`;
     }
   };
 
-  // Download PDF Report with profile metadata & firasat findings
-  const handleDownloadPDF = () => {
+  // Download PDF Report with captured face scan screenshot via html2canvas
+  const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
+    setPdfProgressText('Menangkap visual biometrik...');
     sound.playClick();
     try {
       const matchedProfile = profiles.find(p => p.id === (selectedProfileId || result.profileId) || p.name.toLowerCase() === result.subjectName.toLowerCase());
-      generateFirasatPDF(result, matchedProfile);
+      
+      let capturedScreenshotUrl: string | undefined = undefined;
+
+      // Use html2canvas to screenshot the biometric scan card
+      if (faceScanCardRef.current) {
+        try {
+          const canvas = await html2canvas(faceScanCardRef.current, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#1c1917',
+            logging: false
+          });
+          capturedScreenshotUrl = canvas.toDataURL('image/jpeg', 0.92);
+        } catch (captureErr) {
+          console.warn('html2canvas screenshot capture warning, falling back to raw image:', captureErr);
+          capturedScreenshotUrl = result.imageUrl || undefined;
+        }
+      } else {
+        capturedScreenshotUrl = result.imageUrl || undefined;
+      }
+
+      setPdfProgressText('Menyusun ornamen klasik PDF...');
+      generateFirasatPDF(result, matchedProfile, capturedScreenshotUrl);
     } catch (e) {
       console.error('Failed to generate PDF:', e);
     } finally {
-      setTimeout(() => setIsGeneratingPdf(false), 600);
+      setTimeout(() => {
+        setIsGeneratingPdf(false);
+        setPdfProgressText('');
+      }, 700);
     }
   };
 
@@ -229,11 +261,11 @@ Nasihat jiwa dan riyadhah: ${result.overallSummary.spiritualAdvice}.`;
             <button
               onClick={handleDownloadPDF}
               disabled={isGeneratingPdf}
-              title="Unduh Laporan Ringkasan PDF Lengkap"
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+              title="Unduh Laporan Ringkasan PDF Lengkap Berornamen Islami & Hasil Screenshot Biometrik"
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
             >
-              <Download className="w-4 h-4" />
-              <span>{isGeneratingPdf ? 'Membuat...' : 'Unduh Laporan PDF'}</span>
+              <Download className={`w-4 h-4 ${isGeneratingPdf ? 'animate-bounce' : ''}`} />
+              <span>{isGeneratingPdf ? (pdfProgressText || 'Membuat PDF...') : 'Unduh Laporan PDF'}</span>
             </button>
             <button
               onClick={handlePrint}
@@ -248,6 +280,123 @@ Nasihat jiwa dan riyadhah: ${result.overallSummary.spiritualAdvice}.`;
             >
               <X className="w-5 h-5" />
             </button>
+          </div>
+        </div>
+
+        {/* Biometric Face Scan Visual Card (html2canvas capture target for PDF embedding) */}
+        <div
+          ref={faceScanCardRef}
+          className="rounded-2xl bg-gradient-to-r from-stone-950 via-stone-900 to-stone-950 border border-amber-500/40 p-4 sm:p-5 shadow-xl relative overflow-hidden"
+        >
+          {/* Subtle background glow */}
+          <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 relative z-10">
+            {/* Visual Portrait with Biometric Landmark Overlays */}
+            <div className="relative shrink-0">
+              <div className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-2xl bg-stone-950">
+                {result.imageUrl ? (
+                  <img
+                    src={result.imageUrl}
+                    alt={result.subjectName}
+                    className="w-full h-full object-cover"
+                    crossOrigin="anonymous"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-stone-950 flex flex-col items-center justify-center text-amber-400 gap-1.5">
+                    <User className="w-12 h-12 text-amber-500/60" />
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-amber-400/80">
+                      Raut Wajah
+                    </span>
+                  </div>
+                )}
+
+                {/* Biometric Landmark HUD Overlays */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {/* Corner brackets */}
+                  <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-amber-400" />
+                  <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t-2 border-r-2 border-amber-400" />
+                  <div className="absolute bottom-1.5 left-1.5 w-3 h-3 border-b-2 border-l-2 border-amber-400" />
+                  <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b-2 border-r-2 border-amber-400" />
+
+                  {/* Facial Zone Indicators */}
+                  <div className="absolute top-[26%] left-[49%] -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+                    <div className="w-2.5 h-2.5 rounded-full border border-amber-300 bg-amber-400/40 animate-ping" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-300 absolute" />
+                  </div>
+                  <div className="absolute top-[44%] left-[34%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 border border-cyan-200" />
+                  </div>
+                  <div className="absolute top-[44%] left-[64%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 border border-cyan-200" />
+                  </div>
+                  <div className="absolute top-[62%] left-[49%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 border border-emerald-200" />
+                  </div>
+                  <div className="absolute top-[80%] left-[49%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-rose-400 border border-rose-200" />
+                  </div>
+
+                  {/* Horizontal Scan Target line */}
+                  <div className="absolute inset-x-0 top-1/2 h-0.5 bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
+                </div>
+
+                {/* Subtitle tag */}
+                <div className="absolute bottom-1.5 inset-x-1.5 px-2 py-0.5 rounded bg-stone-950/85 backdrop-blur-sm border border-amber-500/30 flex items-center justify-between text-[9px] text-amber-300 font-mono">
+                  <span>BIO-FIRASAT</span>
+                  <span className="text-emerald-400 font-bold">TERDETEKSI</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Subject Summary & Biometric Markers Info */}
+            <div className="flex-1 space-y-2 text-left w-full">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-amber-400 flex items-center gap-1.5">
+                    <ScanLine className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Rekaman Pemindaian Biometrik (Disertakan di PDF)</span>
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-bold text-stone-100 mt-0.5 font-title">
+                    {result.subjectName}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    {mizaj.indonesianName.split(' (')[0]}
+                  </span>
+                  <span className="text-[10px] text-stone-400 font-mono bg-stone-950 px-2.5 py-1 rounded-lg border border-stone-800">
+                    {result.features.length} Fitur Terpetakan
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs text-stone-300 leading-relaxed">
+                Pemetaan visual menangkap proporsi dahi, struktur mata, kontur hidung, dan garis wajah berdasarkan <span className="text-amber-300 font-semibold">Kitab Al-Firasat Ar-Razi</span>. Tangkapan layar ini otomatis diabadikan ke dalam medali dokumen PDF resmi.
+              </p>
+
+              {/* Mini landmarks preview */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {result.features.slice(0, 4).map((f, i) => (
+                  <span
+                    key={i}
+                    className="text-[10px] px-2 py-0.5 rounded-lg bg-stone-950/80 border border-stone-800 text-stone-300 flex items-center gap-1"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    <span className="font-semibold text-amber-300">{f.organ}:</span>
+                    <span className="truncate max-w-[130px]">{f.observation}</span>
+                  </span>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between text-[10px] text-stone-400 pt-1 border-t border-stone-800/60 font-mono">
+                <span>Waktu Rekam: {new Date(result.timestamp).toLocaleTimeString('id-ID')} WIB</span>
+                <span className="text-amber-400 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  <span>html2canvas High-Res Capture Ready</span>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -134,8 +134,14 @@ export const drawIslamicManuscriptBorder = (
 
 /**
  * Generates official Firasat Character Analysis PDF Report
+ * Features authentic Islamic manuscript borders, biometric face scan capture,
+ * 4 humors distribution, classical organ deductions, and spiritual advice.
  */
-export function generateFirasatPDF(result: FirasatAnalysisResult, profile?: SubjectProfile | null) {
+export function generateFirasatPDF(
+  result: FirasatAnalysisResult, 
+  profile?: SubjectProfile | null,
+  capturedScreenshotUrl?: string
+) {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -198,54 +204,125 @@ export function generateFirasatPDF(result: FirasatAnalysisResult, profile?: Subj
 
   y += 32;
 
-  // --- SUBJECT METADATA CARD ---
+  // --- SUBJECT METADATA CARD (WITH BIOMETRIC FACE SCAN CAPTURE) ---
+  const imgToEmbed = capturedScreenshotUrl || result.imageUrl;
+  const cardHeight = imgToEmbed ? 38 : 34;
+
   doc.setFillColor(250, 249, 246);
-  doc.roundedRect(margin, y, contentWidth, 34, 2, 2, 'F');
+  doc.roundedRect(margin, y, contentWidth, cardHeight, 2, 2, 'F');
   doc.setDrawColor(220, 215, 205);
-  doc.roundedRect(margin, y, contentWidth, 34, 2, 2, 'S');
+  doc.roundedRect(margin, y, contentWidth, cardHeight, 2, 2, 'S');
 
-  // Left column: Profile details
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.setTextColor(30, 27, 24);
-  doc.text(`Subjek: ${result.subjectName}`, margin + 6, y + 7);
+  if (imgToEmbed) {
+    // Left: Embed captured screenshot / face photo in gold-framed medallion
+    const imgX = margin + 3.5;
+    const imgY = y + 3.5;
+    const imgW = 31;
+    const imgH = 31;
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(80, 75, 70);
-  doc.text(`Kategori: ${profile?.category || 'Umum'}`, margin + 6, y + 13.5);
-  doc.text(`Waktu Perekaman: ${new Date(result.timestamp).toLocaleString('id-ID')}`, margin + 6, y + 19.5);
-  doc.text(`Tahapan Usia: ${result.ageStage || profile?.ageStage || 'Paruh Baya (Kuhulah)'}`, margin + 6, y + 25.5);
-  doc.text(`Sifat Alami Bawaan: ${result.overallSummary.naturalInclination || 'Karakter seimbang'}`, margin + 6, y + 31);
+    doc.setFillColor(24, 24, 27);
+    doc.rect(imgX, imgY, imgW, imgH, 'F');
+    doc.setDrawColor(217, 119, 6);
+    doc.setLineWidth(0.4);
+    doc.rect(imgX, imgY, imgW, imgH, 'S');
+    doc.setDrawColor(180, 83, 9);
+    doc.setLineWidth(0.2);
+    doc.rect(imgX + 1, imgY + 1, imgW - 2, imgH - 2, 'S');
 
-  // Right column: Dominant Temperament & Balance
-  const midX = margin + (contentWidth / 2) + 2;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.setTextColor(180, 83, 9); // amber-700
-  doc.text(`Temperamen Dominan: ${mizaj.indonesianName.split(' (')[0]}`, midX, y + 7);
+    try {
+      const format = imgToEmbed.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+      doc.addImage(imgToEmbed, format, imgX + 1.2, imgY + 1.2, imgW - 2.4, imgH - 2.4);
+    } catch (e) {
+      console.warn('Could not embed image into PDF:', e);
+    }
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(75, 70, 65);
-  doc.text(`Unsur / Sifat Alami: ${mizaj.elements}`, midX, y + 13.5);
-  doc.text(`Kualitas Humor: ${mizaj.qualities}`, midX, y + 19.5);
+    // Center column: Profile details
+    const textLeftX = margin + 38;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(30, 27, 24);
+    doc.text(`Subjek: ${result.subjectName}`, textLeftX, y + 6.5);
 
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(result.iTidalStatus.includes('Seimbang') ? 22 : 185, result.iTidalStatus.includes('Seimbang') ? 101 : 28, result.iTidalStatus.includes('Seimbang') ? 52 : 28);
-  doc.text(`Status Keseimbangan (I'tidal): ${result.iTidalStatus}`, midX, y + 25.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.6);
+    doc.setTextColor(80, 75, 70);
+    doc.text(`Kategori: ${profile?.category || 'Umum'}`, textLeftX, y + 12);
+    doc.text(`Waktu: ${new Date(result.timestamp).toLocaleDateString('id-ID')}`, textLeftX, y + 17.5);
+    doc.text(`Usia: ${result.ageStage || profile?.ageStage || 'Paruh Baya (Kuhulah)'}`, textLeftX, y + 23);
+    doc.text(`Sumber: ${result.sourceType === 'camera' ? 'Kamera Live' : result.sourceType === 'manual' ? 'Pemeriksaan Manual' : 'Sampel Firasat'}`, textLeftX, y + 28.5);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(180, 83, 9);
+    doc.text(`Bukti: Tangkapan Layar Biometrik`, textLeftX, y + 34);
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(110, 105, 100);
-  if (profile?.notes) {
-    const truncatedNote = profile.notes.length > 55 ? `${profile.notes.slice(0, 52)}...` : profile.notes;
-    doc.text(`Catatan Profil: "${truncatedNote}"`, midX, y + 31);
+    // Right column: Dominant Temperament & Balance
+    const midX = margin + 104;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(180, 83, 9);
+    doc.text(`Temperamen: ${mizaj.indonesianName.split(' (')[0]}`, midX, y + 6.5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.6);
+    doc.setTextColor(75, 70, 65);
+    doc.text(`Unsur / Sifat: ${mizaj.elements}`, midX, y + 12);
+    doc.text(`Kualitas Humor: ${mizaj.qualities}`, midX, y + 17.5);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(result.iTidalStatus.includes('Seimbang') ? 22 : 185, result.iTidalStatus.includes('Seimbang') ? 101 : 28, result.iTidalStatus.includes('Seimbang') ? 52 : 28);
+    doc.text(`Status: ${result.iTidalStatus}`, midX, y + 23);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.2);
+    doc.setTextColor(110, 105, 100);
+    const summaryText = (result.overallSummary.naturalInclination || 'Karakter seimbang').slice(0, 46);
+    doc.text(`Karakter: "${summaryText}..."`, midX, y + 29);
+    if (result.palmAnalysis) {
+      doc.setTextColor(13, 148, 136);
+      doc.text(`+Analisis Garis Telapak (Kanan-Kiri)`, midX, y + 34);
+    }
   } else {
-    doc.text(`Sumber Analisis: ${result.sourceType === 'camera' ? 'Pemindaian Kamera' : result.sourceType === 'manual' ? 'Pemeriksaan Fitur Manual' : 'Uji Komparasi'}`, midX, y + 31);
+    // Normal 2 columns without image
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(30, 27, 24);
+    doc.text(`Subjek: ${result.subjectName}`, margin + 6, y + 7);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(80, 75, 70);
+    doc.text(`Kategori: ${profile?.category || 'Umum'}`, margin + 6, y + 13.5);
+    doc.text(`Waktu Perekaman: ${new Date(result.timestamp).toLocaleString('id-ID')}`, margin + 6, y + 19.5);
+    doc.text(`Tahapan Usia: ${result.ageStage || profile?.ageStage || 'Paruh Baya (Kuhulah)'}`, margin + 6, y + 25.5);
+    doc.text(`Sifat Alami Bawaan: ${result.overallSummary.naturalInclination || 'Karakter seimbang'}`, margin + 6, y + 31);
+
+    const midX = margin + (contentWidth / 2) + 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(180, 83, 9);
+    doc.text(`Temperamen Dominan: ${mizaj.indonesianName.split(' (')[0]}`, midX, y + 7);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(75, 70, 65);
+    doc.text(`Unsur / Sifat Alami: ${mizaj.elements}`, midX, y + 13.5);
+    doc.text(`Kualitas Humor: ${mizaj.qualities}`, midX, y + 19.5);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(result.iTidalStatus.includes('Seimbang') ? 22 : 185, result.iTidalStatus.includes('Seimbang') ? 101 : 28, result.iTidalStatus.includes('Seimbang') ? 52 : 28);
+    doc.text(`Status Keseimbangan (I'tidal): ${result.iTidalStatus}`, midX, y + 25.5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(110, 105, 100);
+    if (profile?.notes) {
+      const truncatedNote = profile.notes.length > 55 ? `${profile.notes.slice(0, 52)}...` : profile.notes;
+      doc.text(`Catatan Profil: "${truncatedNote}"`, midX, y + 31);
+    } else {
+      doc.text(`Sumber Analisis: ${result.sourceType === 'camera' ? 'Pemindaian Kamera' : result.sourceType === 'manual' ? 'Pemeriksaan Fitur Manual' : 'Uji Komparasi'}`, midX, y + 31);
+    }
   }
 
-  y += 39;
+  y += cardHeight + 5;
 
   // --- 4 MIZAJ DISTRIBUTION SECTION ---
   doc.setFont('helvetica', 'bold');
