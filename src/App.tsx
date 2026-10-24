@@ -13,6 +13,7 @@ import { OnboardingTourModal } from './components/OnboardingTourModal';
 import { ChallengeMode } from './components/ChallengeMode';
 import { GoogleSheetsModal } from './components/GoogleSheetsModal';
 import { FirasatOfTheDay } from './components/FirasatOfTheDay';
+import { DeploymentGuideModal } from './components/DeploymentGuideModal';
 import { appendAnalysisRecordToDedicatedSheet, getAutoSyncSettings } from './services/googleSheets';
 import { getAccessToken } from './services/googleAuth';
 import { FirasatAnalysisResult, SubjectProfile, PeriodicNotification } from './types/firasat';
@@ -68,6 +69,7 @@ export default function App() {
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [isGoogleSheetsModalOpen, setIsGoogleSheetsModalOpen] = useState<boolean>(false);
+  const [isDeployModalOpen, setIsDeployModalOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [dismissedDueBanner, setDismissedDueBanner] = useState<boolean>(false);
   const alertedNotifIdsRef = React.useRef<Set<string>>(new Set());
@@ -296,6 +298,7 @@ export default function App() {
         onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
         onOpenOnboardingTour={() => setIsOnboardingOpen(true)}
         onOpenGoogleSheets={() => setIsGoogleSheetsModalOpen(true)}
+        onOpenDeployGuide={() => setIsDeployModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -499,16 +502,33 @@ export default function App() {
               </div>
             </div>
 
-            <div className="pt-2 border-t border-stone-800 flex justify-end">
+            <div className="pt-2 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                onClick={() => {
+                  setIsAboutOpen(false);
+                  setIsDeployModalOpen(true);
+                }}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>🚀 Panduan Deployment Otomatis (Vercel & Firebase)</span>
+              </button>
               <button
                 onClick={() => setIsAboutOpen(false)}
-                className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition-colors cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition-colors cursor-pointer"
               >
                 Tutup & Mulai Menggunakan
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Deployment Guide Modal */}
+      {isDeployModalOpen && (
+        <DeploymentGuideModal
+          isOpen={isDeployModalOpen}
+          onClose={() => setIsDeployModalOpen(false)}
+        />
       )}
 
       {/* Interactive Onboarding Tour Modal */}
@@ -538,9 +558,18 @@ export default function App() {
           <span>
             Al-Firasat AI • Berdasarkan Kitab Al-Firasat Imam Fakhruddin Ar-Razi (554–606 H)
           </span>
-          <span className="text-[11px] text-stone-400 font-mono">
-            Integrasi Basis Data, Komparasi Recharts & Analisis Suara
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsDeployModalOpen(true)}
+              className="text-[11px] text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1 hover:underline cursor-pointer"
+            >
+              <span>🚀 Panduan Deploy Gratis</span>
+            </button>
+            <span className="text-stone-700">•</span>
+            <span className="text-[11px] text-stone-400 font-mono">
+              Integrasi Basis Data, Komparasi Recharts & Analisis Suara
+            </span>
+          </div>
         </div>
       </footer>
     </div>

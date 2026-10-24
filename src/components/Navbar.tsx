@@ -16,7 +16,8 @@ import {
   TrendingUp,
   HelpCircle,
   Target,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Rocket
 } from 'lucide-react';
 import { sound } from '../services/sound';
 import { OfflineStatusBadge } from './OfflineStatusBadge';
@@ -34,6 +35,7 @@ interface NavbarProps {
   onOpenVoiceModal: () => void;
   onOpenOnboardingTour?: () => void;
   onOpenGoogleSheets?: () => void;
+  onOpenDeployGuide?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -46,7 +48,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAbout,
   onOpenVoiceModal,
   onOpenOnboardingTour,
-  onOpenGoogleSheets
+  onOpenGoogleSheets,
+  onOpenDeployGuide
 }) => {
   const [isMuted, setIsMuted] = React.useState(sound.getMuted());
 
@@ -59,7 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'scanner' as ActiveTab, label: 'Pemindai Wajah & Tangan', icon: Scan },
     { id: 'challenge' as ActiveTab, label: 'Mode Tantangan', icon: Target },
     { id: 'manual' as ActiveTab, label: 'Fitur & Telapak Tangan', icon: SlidersHorizontal },
-    { id: 'trends' as ActiveTab, label: 'Tren Karakter', icon: TrendingUp },
+    { id: 'trends' as ActiveTab, label: 'Tren & Prediksi Mizaj', icon: TrendingUp },
     { id: 'compare' as ActiveTab, label: 'Kecocokan & Komparasi', icon: GitCompare },
     { id: 'database' as ActiveTab, label: 'Basis Data', icon: Database },
     { id: 'notifications' as ActiveTab, label: 'Pemantauan', icon: Bell, badge: pendingNotificationsCount },
@@ -136,6 +139,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
                 <span className="hidden sm:inline">Google Sheets</span>
+              </button>
+            )}
+
+            {/* Deployment Guide Modal Button */}
+            {onOpenDeployGuide && (
+              <button
+                onClick={onOpenDeployGuide}
+                title="Panduan Deployment Otomatis Gratis (Vercel, Firebase, Render)"
+                className="px-2.5 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Rocket className="w-3.5 h-3.5 text-purple-400" />
+                <span className="hidden md:inline">Deploy Gratis</span>
               </button>
             )}
 

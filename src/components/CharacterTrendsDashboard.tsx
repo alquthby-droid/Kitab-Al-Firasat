@@ -32,12 +32,14 @@ import {
   Flame,
   Wind,
   Droplets,
-  Mountain
+  Mountain,
+  Compass
 } from 'lucide-react';
 import { SubjectProfile, FirasatAnalysisResult, TemperamentType } from '../types/firasat';
 import { sound } from '../services/sound';
 import { voiceReader } from '../services/voiceService';
 import { saveHistory } from '../services/api';
+import { MizajPredictiveAnalysis } from './MizajPredictiveAnalysis';
 
 interface CharacterTrendsDashboardProps {
   profiles: SubjectProfile[];
@@ -57,6 +59,7 @@ export const CharacterTrendsDashboard: React.FC<CharacterTrendsDashboardProps> =
   const [selectedProfileId, setSelectedProfileId] = useState<string>(
     profiles.length > 0 ? profiles[0].id : 'all'
   );
+  const [dashboardView, setDashboardView] = useState<'history_trends' | 'predictive_forecast'>('history_trends');
   const [metricMode, setMetricMode] = useState<TrendMetricMode>('mizaj');
   const [isNarrating, setIsNarrating] = useState<boolean>(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -334,14 +337,70 @@ export const CharacterTrendsDashboard: React.FC<CharacterTrendsDashboardProps> =
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-stone-900 via-stone-900 to-amber-950/40 border border-stone-800 p-6 sm:p-7 shadow-xl">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold uppercase tracking-wider">
-              <TrendingUp className="w-4 h-4" />
-              <span>Statistik & Deret Waktu Al-Firasat</span>
-            </div>
+      {/* Top Level Dashboard View Navigation */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-900/90 border border-amber-900/40 p-2 rounded-2xl shadow-xl backdrop-blur-md">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => {
+              sound.playClick();
+              setDashboardView('history_trends');
+            }}
+            className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+              dashboardView === 'history_trends'
+                ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-stone-950 shadow-md shadow-amber-900/30'
+                : 'text-stone-300 hover:text-stone-100 hover:bg-stone-800/60'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span>Tren Riwayat Historis</span>
+          </button>
+
+          <button
+            onClick={() => {
+              sound.playClick();
+              setDashboardView('predictive_forecast');
+            }}
+            className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+              dashboardView === 'predictive_forecast'
+                ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-stone-100 shadow-md shadow-purple-900/40'
+                : 'text-stone-300 hover:text-stone-100 hover:bg-stone-800/60'
+            }`}
+          >
+            <Compass className="w-4 h-4 text-purple-400" />
+            <span>Mizaj Predictive Analysis</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">
+              AI Forecast
+            </span>
+          </button>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-2 text-xs text-stone-400 pr-2">
+          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+          <span>
+            {dashboardView === 'history_trends'
+              ? 'Analisis deret waktu perubahan karakter aktual'
+              : 'Prediksi matematis & kaidah humoral Ar-Razi 14–90 hari'}
+          </span>
+        </div>
+      </div>
+
+      {dashboardView === 'predictive_forecast' ? (
+        <MizajPredictiveAnalysis
+          profiles={profiles}
+          history={history}
+          initialProfileId={selectedProfileId !== 'all' ? selectedProfileId : profiles[0]?.id}
+          onSelectResult={onSelectResult}
+        />
+      ) : (
+        <>
+          {/* Header Banner */}
+          <div className="rounded-3xl bg-gradient-to-r from-stone-900 via-stone-900 to-amber-950/40 border border-stone-800 p-6 sm:p-7 shadow-xl">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold uppercase tracking-wider">
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Statistik & Deret Waktu Al-Firasat</span>
+                </div>
             <h2 className="text-xl sm:text-2xl font-bold font-title text-stone-100">
               Tren Perkembangan Karakter Subjek
             </h2>
@@ -744,6 +803,39 @@ export const CharacterTrendsDashboard: React.FC<CharacterTrendsDashboardProps> =
           ))}
         </div>
       </div>
+
+      {/* Predictive Analysis Quick Callout in Trends View */}
+      <div className="rounded-3xl bg-gradient-to-r from-purple-950/40 via-stone-900 to-stone-900 border border-purple-900/40 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
+            <Compass className="w-6 h-6 animate-pulse" />
+          </div>
+          <div className="space-y-1">
+            <div className="text-sm font-bold text-stone-100 flex items-center gap-2">
+              <span>Ingin Memprediksi Perubahan Mizaj Subjek di Masa Depan?</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">
+                Fitur Baru
+              </span>
+            </div>
+            <p className="text-xs text-stone-400 max-w-xl">
+              Lihat proyeksi matematis 14 hingga 90 hari ke depan, kecepatan perubahan per bulan (*velocity*),
+              sistem peringatan dini gejolak emosi, serta simulasi pengaruh riyadhah (*what-if lifestyle*).
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => {
+            sound.playClick();
+            setDashboardView('predictive_forecast');
+          }}
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-stone-100 text-xs font-bold flex items-center gap-2 self-start sm:self-auto shrink-0 shadow-lg shadow-purple-900/30 transition-all cursor-pointer"
+        >
+          <span>Buka Mizaj Predictive Analysis</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </>
+  )}
 
       {/* Modal: Tambah Catatan Evaluasi Cepat */}
       {isAddModalOpen && currentProfile && (
