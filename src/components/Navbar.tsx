@@ -14,12 +14,13 @@ import {
   Mic,
   GitCompare,
   TrendingUp,
-  HelpCircle
+  HelpCircle,
+  Target
 } from 'lucide-react';
 import { sound } from '../services/sound';
 import { OfflineStatusBadge } from './OfflineStatusBadge';
 
-export type ActiveTab = 'scanner' | 'manual' | 'trends' | 'compare' | 'database' | 'notifications' | 'library';
+export type ActiveTab = 'scanner' | 'challenge' | 'manual' | 'trends' | 'compare' | 'database' | 'notifications' | 'library';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -53,6 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems = [
     { id: 'scanner' as ActiveTab, label: 'Pemindai Wajah & Tangan', icon: Scan },
+    { id: 'challenge' as ActiveTab, label: 'Mode Tantangan', icon: Target },
     { id: 'manual' as ActiveTab, label: 'Fitur & Telapak Tangan', icon: SlidersHorizontal },
     { id: 'trends' as ActiveTab, label: 'Tren Karakter', icon: TrendingUp },
     { id: 'compare' as ActiveTab, label: 'Kecocokan & Komparasi', icon: GitCompare },

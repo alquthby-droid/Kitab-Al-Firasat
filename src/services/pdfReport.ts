@@ -229,11 +229,24 @@ export function generateFirasatPDF(
     doc.setLineWidth(0.2);
     doc.rect(imgX + 1, imgY + 1, imgW - 2, imgH - 2, 'S');
 
+    let imageEmbedded = false;
     try {
-      const format = imgToEmbed.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-      doc.addImage(imgToEmbed, format, imgX + 1.2, imgY + 1.2, imgW - 2.4, imgH - 2.4);
+      if (imgToEmbed.startsWith('data:')) {
+        const format = imgToEmbed.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(imgToEmbed, format, imgX + 1.2, imgY + 1.2, imgW - 2.4, imgH - 2.4);
+        imageEmbedded = true;
+      }
     } catch (e) {
       console.warn('Could not embed image into PDF:', e);
+    }
+
+    if (!imageEmbedded) {
+      doc.setFillColor(39, 39, 42);
+      doc.rect(imgX + 1.2, imgY + 1.2, imgW - 2.4, imgH - 2.4, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(245, 158, 11);
+      doc.text((result.subjectName || 'S').charAt(0).toUpperCase(), imgX + (imgW / 2), imgY + (imgH / 2) + 4.5, { align: 'center' });
     }
 
     // Center column: Profile details

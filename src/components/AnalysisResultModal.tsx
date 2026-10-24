@@ -36,7 +36,7 @@ import { toHijri } from '../services/hijriCalendar';
 import { ShareAnalysisModal } from './ShareAnalysisModal';
 
 interface AnalysisResultModalProps {
-  result: FirasatAnalysisResult | null;
+  result: FirasatAnalysisResult;
   profiles: SubjectProfile[];
   onClose: () => void;
   onRefreshData: () => void;
@@ -48,8 +48,6 @@ export const AnalysisResultModal: React.FC<AnalysisResultModalProps> = ({
   onClose,
   onRefreshData
 }) => {
-  if (!result) return null;
-
   const mizaj = MIZAJ_DATA[result.dominantMizaj] || MIZAJ_DATA.sanguinis;
   const [selectedProfileId, setSelectedProfileId] = useState<string>(result.profileId || '');
   const [isSavingProfile, setIsSavingProfile] = useState<boolean>(false);

@@ -15,21 +15,62 @@ import {
   Trash2,
   Unlock,
   RotateCcw,
-  Hand
+  Hand,
+  Target,
+  Lightbulb,
+  Sun,
+  SunDim,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Minimize2
 } from 'lucide-react';
 import { FirasatAnalysisResult, SubjectProfile } from '../types/firasat';
 import { SAMPLE_PORTRAITS } from '../data/kitabFirasatData';
 import { analyzeFace } from '../services/api';
 import { sound } from '../services/sound';
 
+export interface SmartTipState {
+  status: 'optimal' | 'guidance' | 'warning';
+  title: string;
+  advice: string;
+  lightingStatus: 'Cahaya Redup' | 'Cahaya Optimal' | 'Terlalu Terang';
+  lightingLevel: 'low' | 'good' | 'high';
+  angleStatus: 'Kamera Rendah' | 'Sejajar Mata' | 'Kamera Tinggi';
+  angleLevel: 'low' | 'good' | 'high';
+  centeringStatus: 'Geser Kanan' | 'Tengah Sempurna' | 'Geser Kiri';
+  centeringLevel: 'left' | 'centered' | 'right';
+  distanceStatus: 'Terlalu Jauh' | 'Jarak Pas' | 'Terlalu Dekat';
+  distanceLevel: 'far' | 'ideal' | 'close';
+  iconType: 'sun_dim' | 'sun' | 'arrow_up' | 'arrow_down' | 'arrow_left' | 'arrow_right' | 'check' | 'lightbulb' | 'maximize' | 'minimize';
+}
+
+export const defaultSmartTip: SmartTipState = {
+  status: 'optimal',
+  title: 'Pencahayaan & Posisi Optimal',
+  advice: 'Posisikan wajah tepat di dalam bingkai oval dengan pandangan rileks sejajar kamera.',
+  lightingStatus: 'Cahaya Optimal',
+  lightingLevel: 'good',
+  angleStatus: 'Sejajar Mata',
+  angleLevel: 'good',
+  centeringStatus: 'Tengah Sempurna',
+  centeringLevel: 'centered',
+  distanceStatus: 'Jarak Pas',
+  distanceLevel: 'ideal',
+  iconType: 'check'
+};
+
 interface FaceScannerProps {
   profiles: SubjectProfile[];
   onAnalysisComplete: (result: FirasatAnalysisResult) => void;
+  onNavigateToTab?: (tab: string) => void;
 }
 
 export const FaceScanner: React.FC<FaceScannerProps> = ({
   profiles,
-  onAnalysisComplete
+  onAnalysisComplete,
+  onNavigateToTab
 }) => {
   const [mode, setMode] = useState<'camera' | 'upload' | 'samples'>('camera');
   const [scanTarget, setScanTarget] = useState<'face' | 'palm_right' | 'palm_left'>('face');
@@ -66,6 +107,280 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({
   }, [selectedProfileId, profiles]);
 
   const [cameraRequested, setCameraRequested] = useState<boolean>(false);
+  const [showSmartTips, setShowSmartTips] = useState<boolean>(true);
+  const [smartTip, setSmartTip] = useState<SmartTipState>(defaultSmartTip);
+  const analysisCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Real-time Frame Analysis for Smart Tips (Brightness, Camera Elevation, Centering & Distance)
+  useEffect(() => {
+    if (!cameraActive || capturedImage || !showSmartTips) return;
+
+    let isMounted = true;
+    const interval = setInterval(() => {
+      const video = videoRef.current;
+      if (!video || video.readyState < 2 || video.videoWidth === 0) return;
+
+      if (!analysisCanvasRef.current) {
+        analysisCanvasRef.current = document.createElement('canvas');
+      }
+      const canvas = analysisCanvasRef.current;
+      const sampleW = 160;
+      const sampleH = 120;
+      if (canvas.width !== sampleW || canvas.height !== sampleH) {
+        canvas.width = sampleW;
+        canvas.height = sampleH;
+      }
+
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return;
+
+      try {
+        ctx.drawImage(video, 0, 0, sampleW, sampleH);
+        const imgData = ctx.getImageData(0, 0, sampleW, sampleH);
+        const data = imgData.data;
+
+        let totalLuma = 0;
+        let weightedY = 0;
+        let weightedX = 0;
+        let totalWeight = 0;
+
+        let topLuma = 0;
+        let midLuma = 0;
+        let botLuma = 0;
+        let topCount = 0;
+        let midCount = 0;
+        let botCount = 0;
+
+        let leftLuma = 0;
+        let rightLuma = 0;
+        let leftCount = 0;
+        let rightCount = 0;
+
+        let borderLuma = 0;
+        let borderCount = 0;
+        let centerLuma = 0;
+        let centerCount = 0;
+
+        const totalPixels = sampleW * sampleH;
+
+        for (let y = 0; y < sampleH; y++) {
+          for (let x = 0; x < sampleW; x++) {
+            const idx = (y * sampleW + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+
+            totalLuma += luma;
+
+            const weight = Math.max(1, luma);
+            weightedY += y * weight;
+            weightedX += x * weight;
+            totalWeight += weight;
+
+            if (y < sampleH * 0.33) {
+              topLuma += luma;
+              topCount++;
+            } else if (y < sampleH * 0.66) {
+              midLuma += luma;
+              midCount++;
+            } else {
+              botLuma += luma;
+              botCount++;
+            }
+
+            if (x < sampleW * 0.5) {
+              leftLuma += luma;
+              leftCount++;
+            } else {
+              rightLuma += luma;
+              rightCount++;
+            }
+
+            const isBorder = x < sampleW * 0.15 || x > sampleW * 0.85 || y < sampleH * 0.15 || y > sampleH * 0.85;
+            if (isBorder) {
+              borderLuma += luma;
+              borderCount++;
+            } else if (x > sampleW * 0.3 && x < sampleW * 0.7 && y > sampleH * 0.25 && y < sampleH * 0.75) {
+              centerLuma += luma;
+              centerCount++;
+            }
+          }
+        }
+
+        const avgLuma = totalLuma / totalPixels;
+        const cyNorm = totalWeight > 0 ? (weightedY / totalWeight) / sampleH : 0.5;
+        const cxNorm = totalWeight > 0 ? (weightedX / totalWeight) / sampleW : 0.5;
+
+        const avgBorder = borderCount > 0 ? borderLuma / borderCount : 0;
+        const avgCenter = centerCount > 0 ? centerLuma / centerCount : 0;
+
+        let lightingStatus: SmartTipState['lightingStatus'] = 'Cahaya Optimal';
+        let lightingLevel: SmartTipState['lightingLevel'] = 'good';
+        let angleStatus: SmartTipState['angleStatus'] = 'Sejajar Mata';
+        let angleLevel: SmartTipState['angleLevel'] = 'good';
+        let centeringStatus: SmartTipState['centeringStatus'] = 'Tengah Sempurna';
+        let centeringLevel: SmartTipState['centeringLevel'] = 'centered';
+        let distanceStatus: SmartTipState['distanceStatus'] = 'Jarak Pas';
+        let distanceLevel: SmartTipState['distanceLevel'] = 'ideal';
+
+        let status: SmartTipState['status'] = 'optimal';
+        let title = 'Pencahayaan & Posisi Optimal';
+        let advice = 'Posisi wajah dan pencahayaan sangat baik sesuai standar Al-Firasat. Siap mengambil foto!';
+        let iconType: SmartTipState['iconType'] = 'check';
+
+        // 1. Lighting Check
+        if (avgLuma < 52) {
+          lightingStatus = 'Cahaya Redup';
+          lightingLevel = 'low';
+          status = 'warning';
+          title = 'Cahaya Terlalu Redup';
+          advice = 'Cahaya di sekitar wajah kurang terang. Hadapkan wajah ke arah sumber cahaya agar rona kulit tampak jelas.';
+          iconType = 'sun_dim';
+        } else if (avgLuma > 215) {
+          lightingStatus = 'Terlalu Terang';
+          lightingLevel = 'high';
+          status = 'warning';
+          title = 'Cahaya Terlalu Silau';
+          advice = 'Pencahayaan berlebih (overexposure). Hindari lampu sorot langsung ke arah lensa kamera.';
+          iconType = 'sun';
+        }
+
+        // 2. Vertical Camera Elevation Check
+        const botRatio = (botLuma / (botCount || 1)) / (avgLuma || 1);
+        const topRatio = (topLuma / (topCount || 1)) / (avgLuma || 1);
+
+        if (status === 'optimal') {
+          if (cyNorm > 0.58 || botRatio > 1.35) {
+            angleStatus = 'Kamera Rendah';
+            angleLevel = 'low';
+            status = 'guidance';
+            title = 'Tinggikan Kamera Sedikit';
+            advice = 'Tinggikan posisi kamera atau ganjal perangkat agar lensa sejajar dengan tinggi mata (hindari sudut dari bawah).';
+            iconType = 'arrow_up';
+          } else if (cyNorm < 0.40 || topRatio > 1.35) {
+            angleStatus = 'Kamera Tinggi';
+            angleLevel = 'high';
+            status = 'guidance';
+            title = 'Rendahkan Kamera Sedikit';
+            advice = 'Rendahkan sudut kamera sedikit atau tegakkan kepala agar raut muka terlihat seimbang.';
+            iconType = 'arrow_down';
+          }
+        }
+
+        // 3. Centering Check
+        if (cxNorm < 0.43) {
+          centeringStatus = 'Geser Kiri';
+          centeringLevel = 'left';
+          if (status === 'optimal') {
+            status = 'guidance';
+            title = 'Posisikan ke Tengah';
+            advice = 'Geser posisi wajah sedikit ke arah tengah bingkai oval panduan.';
+            iconType = 'arrow_right';
+          }
+        } else if (cxNorm > 0.57) {
+          centeringStatus = 'Geser Kanan';
+          centeringLevel = 'right';
+          if (status === 'optimal') {
+            status = 'guidance';
+            title = 'Posisikan ke Tengah';
+            advice = 'Geser posisi wajah sedikit ke arah tengah bingkai oval panduan.';
+            iconType = 'arrow_left';
+          }
+        }
+
+        // 4. Distance / Framing Check
+        if (avgBorder > 150 && avgCenter > 150 && Math.abs(avgBorder - avgCenter) < 15) {
+          distanceStatus = 'Terlalu Dekat';
+          distanceLevel = 'close';
+          if (status === 'optimal') {
+            status = 'guidance';
+            title = 'Mundur Sedikit';
+            advice = 'Mundur sedikit dari kamera agar dahi, telinga, dan dagu masuk seutuhnya ke dalam bingkai.';
+            iconType = 'maximize';
+          }
+        }
+
+        // Target palm adjustments
+        if (scanTarget !== 'face') {
+          if (status === 'optimal') {
+            title = 'Posisi Telapak Optimal';
+            advice = 'Telapak tangan tegak lurus dan garis tangan terlihat jelas di dalam retikel panduan.';
+          } else if (title === 'Tinggikan Kamera Sedikit' || title === 'Rendahkan Kamera Sedikit') {
+            advice = 'Sejajarkan telapak tangan menghadap tegak lurus ke arah lensa kamera.';
+          }
+        }
+
+        if (isMounted) {
+          setSmartTip({
+            status,
+            title,
+            advice,
+            lightingStatus,
+            lightingLevel,
+            angleStatus,
+            angleLevel,
+            centeringStatus,
+            centeringLevel,
+            distanceStatus,
+            distanceLevel,
+            iconType
+          });
+        }
+      } catch {
+        // frame processing non-fatal
+      }
+    }, 450);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [cameraActive, capturedImage, showSmartTips, scanTarget]);
+
+  // Analyze uploaded image brightness and quality
+  useEffect(() => {
+    if (mode === 'upload' && capturedImage) {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = 100;
+        c.height = 100;
+        const ctx = c.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, 100, 100);
+          const data = ctx.getImageData(0, 0, 100, 100).data;
+          let sum = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            sum += 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+          }
+          const avg = sum / (100 * 100);
+          if (avg < 50) {
+            setSmartTip({
+              ...defaultSmartTip,
+              status: 'warning',
+              title: 'Foto Cenderung Redup',
+              advice: 'Foto memiliki pencahayaan agak gelap. Untuk akurasi rona wajah Ar-Razi, disarankan foto dengan cahaya merata.',
+              lightingStatus: 'Cahaya Redup',
+              lightingLevel: 'low',
+              iconType: 'sun_dim'
+            });
+          } else {
+            setSmartTip({
+              ...defaultSmartTip,
+              status: 'optimal',
+              title: 'Kualitas Foto Baik',
+              advice: 'Pencahayaan foto seimbang dan fitur wajah siap didekonstruksi sesuai kaidah fisiognomi klasik.',
+              lightingStatus: 'Cahaya Optimal',
+              lightingLevel: 'good',
+              iconType: 'check'
+            });
+          }
+        }
+      };
+      img.src = capturedImage;
+    }
+  }, [mode, capturedImage]);
 
   // Start Camera
   const startCamera = useCallback(async () => {
@@ -353,7 +668,7 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({
     }
   };
 
-  // Image Upload handler
+  // Image Upload handler (with fast client-side resizing to max 1280px)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -363,9 +678,41 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({
       }
       const reader = new FileReader();
       reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setCapturedImage(result);
-        sound.playLockPing();
+        const rawResult = event.target?.result as string;
+        if (!rawResult) return;
+
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1280;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, w, h);
+            const optimized = canvas.toDataURL('image/jpeg', 0.88);
+            setCapturedImage(optimized);
+          } else {
+            setCapturedImage(rawResult);
+          }
+          sound.playLockPing();
+        };
+        img.onerror = () => {
+          setCapturedImage(rawResult);
+          sound.playLockPing();
+        };
+        img.src = rawResult;
       };
       reader.readAsDataURL(file);
     }
@@ -485,6 +832,35 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Challenge Mode Callout Banner */}
+      {onNavigateToTab && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 via-stone-900 to-amber-900/30 border border-amber-500/30 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <Target className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h4 className="text-xs sm:text-sm font-bold text-stone-100 flex items-center gap-1.5">
+                <span>Ingin Menguji Ketajaman Firasat Anda Terlebih Dahulu?</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold uppercase">
+                  Mode Latihan
+                </span>
+              </h4>
+              <p className="text-[11px] text-stone-400">
+                Tebak temperamen Mizaj wajah acak sebelum melihat hasil AI untuk melatih intuisi basirah Ar-Razi.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigateToTab('challenge')}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer shrink-0"
+          >
+            <Target className="w-4 h-4" />
+            <span>Mulai Challenge Mode</span>
+          </button>
+        </div>
+      )}
 
       {/* Bidang Pemindaian Selector: Wajah vs Telapak Kanan vs Telapak Kiri */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2.5 bg-stone-900/90 rounded-2xl border border-stone-800 shadow-lg">
@@ -691,20 +1067,118 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({
                   </div>
                 )}
 
-                {/* HUD Top-Bar Control */}
+                {/* HUD Top-Bar Controls */}
                 {cameraActive && !capturedImage && (
-                  <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+                  <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
                     <button
+                      type="button"
+                      onClick={() => setShowSmartTips(!showSmartTips)}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer shadow-md ${
+                        showSmartTips 
+                          ? 'bg-amber-500/25 text-amber-200 border border-amber-500/50' 
+                          : 'bg-stone-950/70 text-stone-400 border border-stone-800'
+                      }`}
+                      title="Nyalakan/matikan rekomendasi posisi wajah real-time"
+                    >
+                      <Lightbulb className={`w-3.5 h-3.5 ${showSmartTips ? 'text-amber-400 animate-pulse' : 'text-stone-500'}`} />
+                      <span>{showSmartTips ? 'Smart Tips: ON' : 'Smart Tips: OFF'}</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setShowHUD(!showHUD)}
-                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium backdrop-blur-md transition-all ${
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer ${
                         showHUD 
                           ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' 
                           : 'bg-stone-950/70 text-stone-400 border border-stone-800'
                       }`}
                     >
                       <ScanLine className="w-3 h-3 inline mr-1" />
-                      {showHUD ? 'HUD Aktif' : 'HUD Nonaktif'}
+                      {showHUD ? 'HUD: ON' : 'HUD: OFF'}
                     </button>
+                  </div>
+                )}
+
+                {/* Real-Time Smart Tips Floating Banner Overlay */}
+                {cameraActive && !capturedImage && showSmartTips && (
+                  <div className="absolute bottom-3 left-3 right-3 z-30 pointer-events-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className={`p-2.5 sm:p-3 rounded-2xl backdrop-blur-md border shadow-2xl transition-all duration-300 ${
+                      smartTip.status === 'optimal'
+                        ? 'bg-stone-950/85 border-emerald-500/40 shadow-emerald-950/30'
+                        : smartTip.status === 'warning'
+                        ? 'bg-stone-950/90 border-red-500/50 shadow-red-950/30'
+                        : 'bg-stone-950/90 border-amber-500/50 shadow-amber-950/40'
+                    }`}>
+                      <div className="flex items-center justify-between gap-2 mb-1.5 pb-1 border-b border-stone-800/80">
+                        <div className="flex items-center gap-1.5">
+                          <div className={`p-1 rounded-md ${
+                            smartTip.status === 'optimal'
+                              ? 'bg-emerald-500/20 text-emerald-300'
+                              : smartTip.status === 'warning'
+                              ? 'bg-red-500/20 text-red-300'
+                              : 'bg-amber-500/20 text-amber-300'
+                          }`}>
+                            <Lightbulb className="w-3 h-3 text-amber-400" />
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                            <span>Smart Tips Real-Time</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping inline-block" />
+                          </span>
+                        </div>
+
+                        {/* Real-time mini status indicators */}
+                        <div className="flex items-center gap-1 text-[9px]">
+                          <span className={`px-2 py-0.5 rounded-full font-semibold ${
+                            smartTip.lightingLevel === 'good'
+                              ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse'
+                          }`}>
+                            {smartTip.lightingStatus}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full font-semibold ${
+                            smartTip.angleLevel === 'good'
+                              ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse'
+                          }`}>
+                            {smartTip.angleStatus}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        <div className={`shrink-0 p-2 rounded-xl border ${
+                          smartTip.status === 'optimal'
+                            ? 'bg-emerald-950/60 border-emerald-500/40'
+                            : smartTip.status === 'warning'
+                            ? 'bg-red-950/60 border-red-500/40'
+                            : 'bg-amber-950/60 border-amber-500/40'
+                        }`}>
+                          {smartTip.iconType === 'sun_dim' && <SunDim className="w-4 h-4 text-amber-400 animate-pulse" />}
+                          {smartTip.iconType === 'sun' && <Sun className="w-4 h-4 text-amber-400 animate-pulse" />}
+                          {smartTip.iconType === 'arrow_up' && <ArrowUp className="w-4 h-4 text-amber-400 animate-bounce" />}
+                          {smartTip.iconType === 'arrow_down' && <ArrowDown className="w-4 h-4 text-amber-400 animate-bounce" />}
+                          {smartTip.iconType === 'arrow_left' && <ArrowLeft className="w-4 h-4 text-amber-400 animate-pulse" />}
+                          {smartTip.iconType === 'arrow_right' && <ArrowRight className="w-4 h-4 text-amber-400 animate-pulse" />}
+                          {smartTip.iconType === 'maximize' && <Maximize2 className="w-4 h-4 text-amber-400 animate-pulse" />}
+                          {smartTip.iconType === 'minimize' && <Minimize2 className="w-4 h-4 text-amber-400 animate-pulse" />}
+                          {smartTip.iconType === 'check' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                          {smartTip.iconType === 'lightbulb' && <Lightbulb className="w-4 h-4 text-amber-400" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-bold leading-tight ${
+                            smartTip.status === 'optimal'
+                              ? 'text-emerald-300'
+                              : smartTip.status === 'warning'
+                              ? 'text-red-300'
+                              : 'text-amber-200'
+                          }`}>
+                            {smartTip.title}
+                          </p>
+                          <p className="text-[11px] text-stone-300 mt-0.5 leading-snug line-clamp-2">
+                            {smartTip.advice}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </>
@@ -979,6 +1453,119 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({
               </div>
             </div>
           )}
+
+          {/* Smart Tips & Real-Time Alignment Guide */}
+          <div className="rounded-2xl bg-stone-900/90 border border-stone-800 p-4 space-y-3 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                  <Lightbulb className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-stone-200">
+                    Smart Tips: Presisi Fisiognomi Ar-Razi
+                  </h4>
+                  <p className="text-[10px] text-stone-400">
+                    {mode === 'camera' && cameraActive && !capturedImage
+                      ? 'Analisis posisi wajah langsung terdeteksi'
+                      : 'Kaidah pemindaian untuk akurasi optimal'}
+                  </p>
+                </div>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                smartTip.status === 'optimal'
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  : 'bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse'
+              }`}>
+                {smartTip.status === 'optimal' ? 'Kondisi Ideal' : 'Perlu Penyesuaian'}
+              </span>
+            </div>
+
+            {/* Current Active Advice Banner */}
+            <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 text-xs ${
+              smartTip.status === 'optimal'
+                ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-200'
+                : smartTip.status === 'warning'
+                ? 'bg-red-950/30 border-red-500/30 text-red-200'
+                : 'bg-amber-950/30 border-amber-500/30 text-amber-200'
+            }`}>
+              <div className="shrink-0">
+                {smartTip.iconType === 'sun_dim' && <SunDim className="w-4 h-4 text-amber-400" />}
+                {smartTip.iconType === 'sun' && <Sun className="w-4 h-4 text-amber-400" />}
+                {smartTip.iconType === 'arrow_up' && <ArrowUp className="w-4 h-4 text-amber-400" />}
+                {smartTip.iconType === 'arrow_down' && <ArrowDown className="w-4 h-4 text-amber-400" />}
+                {smartTip.iconType === 'arrow_left' && <ArrowLeft className="w-4 h-4 text-amber-400" />}
+                {smartTip.iconType === 'arrow_right' && <ArrowRight className="w-4 h-4 text-amber-400" />}
+                {smartTip.iconType === 'maximize' && <Maximize2 className="w-4 h-4 text-amber-400" />}
+                {smartTip.iconType === 'minimize' && <Minimize2 className="w-4 h-4 text-amber-400" />}
+                {smartTip.iconType === 'check' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                {smartTip.iconType === 'lightbulb' && <Lightbulb className="w-4 h-4 text-amber-400" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="font-bold block text-[11px]">{smartTip.title}</span>
+                <span className="text-[10px] text-stone-300 leading-tight block">{smartTip.advice}</span>
+              </div>
+            </div>
+
+            {/* 4 Pillars of Precision Indicators */}
+            <div className="grid grid-cols-2 gap-2 text-[10px]">
+              {/* 1. Pencahayaan */}
+              <div className="p-2 rounded-xl bg-stone-950 border border-stone-800/80 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-stone-400 mb-1">
+                  <span>Pencahayaan</span>
+                  <Sun className="w-3 h-3 text-amber-400" />
+                </div>
+                <span className={`font-semibold ${
+                  smartTip.lightingLevel === 'good' ? 'text-emerald-400' : 'text-amber-400'
+                }`}>
+                  {smartTip.lightingStatus}
+                </span>
+              </div>
+
+              {/* 2. Sudut Kamera */}
+              <div className="p-2 rounded-xl bg-stone-950 border border-stone-800/80 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-stone-400 mb-1">
+                  <span>Tinggi Kamera</span>
+                  <ArrowUp className="w-3 h-3 text-amber-400" />
+                </div>
+                <span className={`font-semibold ${
+                  smartTip.angleLevel === 'good' ? 'text-emerald-400' : 'text-amber-400'
+                }`}>
+                  {smartTip.angleStatus}
+                </span>
+              </div>
+
+              {/* 3. Posisi Tengah */}
+              <div className="p-2 rounded-xl bg-stone-950 border border-stone-800/80 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-stone-400 mb-1">
+                  <span>Kesejajaran</span>
+                  <Eye className="w-3 h-3 text-amber-400" />
+                </div>
+                <span className={`font-semibold ${
+                  smartTip.centeringLevel === 'centered' ? 'text-emerald-400' : 'text-amber-400'
+                }`}>
+                  {smartTip.centeringStatus}
+                </span>
+              </div>
+
+              {/* 4. Jarak Bingkai */}
+              <div className="p-2 rounded-xl bg-stone-950 border border-stone-800/80 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-stone-400 mb-1">
+                  <span>Jarak Wajah</span>
+                  <Maximize2 className="w-3 h-3 text-amber-400" />
+                </div>
+                <span className={`font-semibold ${
+                  smartTip.distanceLevel === 'ideal' ? 'text-emerald-400' : 'text-amber-400'
+                }`}>
+                  {smartTip.distanceStatus}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-stone-500 italic border-t border-stone-800/60 pt-2">
+              "Kebenaran firasat bertumpu pada pengamatan kondisi alami wajah yang bebas dari distorsi sudut dan kegelapan bayangan." — Kitab Al-Firasat Imam Fakhruddin Ar-Razi.
+            </p>
+          </div>
 
           {/* Classical Firasat Inspection Checklist */}
           <div className="rounded-2xl bg-stone-900/60 border border-stone-800/80 p-4">

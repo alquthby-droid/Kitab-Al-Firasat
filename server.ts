@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import http from 'http';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
@@ -499,7 +500,7 @@ Berikan analisis mendalam, akurat, dan terstruktur sesuai kitab.
             id: 'scan-' + Date.now(),
             subjectName: subjectName || 'Subjek Analisis',
             timestamp: new Date().toISOString(),
-            imageUrl: imageBase64.length < 500000 ? imageBase64 : undefined,
+            imageUrl: imageBase64 || undefined,
             sourceType: 'camera',
             ...parsed
           };
@@ -511,7 +512,10 @@ Berikan analisis mendalam, akurat, dan terstruktur sesuai kitab.
     }
 
     // Classical Algorithmic Fallback Engine (Authentic to Ar-Razi's rules)
-    const fallbackResult = generateClassicalFirasatDeduction(subjectName, manualTraits, scanTarget);
+    const fallbackResult: any = generateClassicalFirasatDeduction(subjectName, manualTraits, scanTarget);
+    if (imageBase64) {
+      fallbackResult.imageUrl = imageBase64;
+    }
     res.json(fallbackResult);
   } catch (err: any) {
     console.error('Error analyzing face:', err);
@@ -677,10 +681,15 @@ function generateClassicalFirasatDeduction(subjectName = 'Subjek Analisis', manu
 // ----------------- VITE INTEGRATION -----------------
 async function startServer() {
   const isProd = process.env.NODE_ENV === 'production';
+  const httpServer = http.createServer(app);
 
   if (!isProd) {
+    const isHmrDisabled = process.env.DISABLE_HMR === 'true';
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: isHmrDisabled ? false : { server: httpServer },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -692,7 +701,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`[Al-Firasat Server] Running on http://0.0.0.0:${PORT}`);
   });
 }

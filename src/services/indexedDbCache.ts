@@ -29,20 +29,20 @@ class IndexedDbCacheService {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private isSimulatedOffline: boolean = false;
   private onlineListeners: Set<(online: boolean) => void> = new Set();
+  private memoryProfiles: SubjectProfile[] = [];
+  private memoryHistory: FirasatAnalysisResult[] = [];
 
   constructor() {
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => this.notifyOnlineListeners(true));
       window.addEventListener('offline', () => this.notifyOnlineListeners(false));
       
-      // Auto-initialize and seed cache on startup
-      this.initDB().then(() => {
-        this.cacheKitabAndTheory().catch(err => {
-          console.warn('Auto cache init warning:', err);
+      // Auto-initialize and seed cache on startup silently with graceful fallback
+      this.initDB()
+        .then(() => this.cacheKitabAndTheory())
+        .catch(() => {
+          // Graceful fallback: memory cache and static references are always available
         });
-      }).catch(err => {
-        console.warn('IndexedDB not supported or initialization error:', err);
-      });
     }
   }
 
@@ -127,7 +127,8 @@ class IndexedDbCacheService {
       };
 
       request.onerror = () => {
-        reject(request.error);
+        this.dbPromise = null;
+        reject(request.error || new Error('IndexedDB open error'));
       };
     });
 
@@ -216,7 +217,11 @@ class IndexedDbCacheService {
       };
 
       tx.onerror = () => {
-        reject(tx.error);
+        resolve(meta);
+      };
+
+      tx.onabort = () => {
+        resolve(meta);
       };
     });
   }
@@ -276,6 +281,7 @@ class IndexedDbCacheService {
 
   // Cache profiles for offline usage
   public async cacheProfiles(profiles: SubjectProfile[]): Promise<void> {
+    this.memoryProfiles = [...profiles];
     try {
       const db = await this.initDB();
       const tx = db.transaction(['profiles_cache', 'cache_meta'], 'readwrite');
@@ -291,19 +297,20 @@ class IndexedDbCacheService {
         current.lastUpdated = new Date().toISOString();
         metaStore.put(current);
       };
-    } catch (err) {
-      console.warn('Failed to cache profiles in IndexedDB:', err);
+    } catch {
+      // Memory cache is already updated
     }
   }
 
   // Delete cached profile directly from IndexedDB
   public async deleteCachedProfile(id: string): Promise<void> {
+    this.memoryProfiles = this.memoryProfiles.filter(p => p.id !== id);
     try {
       const db = await this.initDB();
       const tx = db.transaction(['profiles_cache'], 'readwrite');
       tx.objectStore('profiles_cache').delete(id);
-    } catch (err) {
-      console.warn('Failed to delete cached profile from IndexedDB:', err);
+    } catch {
+      // Handled in memory
     }
   }
 
@@ -315,16 +322,25 @@ class IndexedDbCacheService {
         const tx = db.transaction('profiles_cache', 'readonly');
         const store = tx.objectStore('profiles_cache');
         const req = store.getAll();
-        req.onsuccess = () => resolve(req.result || []);
-        req.onerror = () => resolve([]);
+        req.onsuccess = () => {
+          const res = req.result || [];
+          if (res.length > 0) {
+            this.memoryProfiles = res;
+            resolve(res);
+          } else {
+            resolve(this.memoryProfiles);
+          }
+        };
+        req.onerror = () => resolve(this.memoryProfiles);
       });
     } catch {
-      return [];
+      return this.memoryProfiles;
     }
   }
 
   // Cache history scans for offline trends & charts
   public async cacheHistory(history: FirasatAnalysisResult[]): Promise<void> {
+    this.memoryHistory = [...history];
     try {
       const db = await this.initDB();
       const tx = db.transaction(['history_cache', 'cache_meta'], 'readwrite');
@@ -340,19 +356,20 @@ class IndexedDbCacheService {
         current.lastUpdated = new Date().toISOString();
         metaStore.put(current);
       };
-    } catch (err) {
-      console.warn('Failed to cache history in IndexedDB:', err);
+    } catch {
+      // Memory cache is already updated
     }
   }
 
   // Delete cached history scan directly from IndexedDB
   public async deleteCachedHistory(id: string): Promise<void> {
+    this.memoryHistory = this.memoryHistory.filter(h => h.id !== id);
     try {
       const db = await this.initDB();
       const tx = db.transaction(['history_cache'], 'readwrite');
       tx.objectStore('history_cache').delete(id);
-    } catch (err) {
-      console.warn('Failed to delete cached history from IndexedDB:', err);
+    } catch {
+      // Handled in memory
     }
   }
 
@@ -364,11 +381,19 @@ class IndexedDbCacheService {
         const tx = db.transaction('history_cache', 'readonly');
         const store = tx.objectStore('history_cache');
         const req = store.getAll();
-        req.onsuccess = () => resolve(req.result || []);
-        req.onerror = () => resolve([]);
+        req.onsuccess = () => {
+          const res = req.result || [];
+          if (res.length > 0) {
+            this.memoryHistory = res;
+            resolve(res);
+          } else {
+            resolve(this.memoryHistory);
+          }
+        };
+        req.onerror = () => resolve(this.memoryHistory);
       });
     } catch {
-      return [];
+      return this.memoryHistory;
     }
   }
 

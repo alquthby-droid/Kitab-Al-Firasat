@@ -91,7 +91,22 @@ export const ProfileComparisonChart: React.FC<ProfileComparisonChartProps> = ({
 
   // Find scan for profile or fallback
   const scanA = useMemo(() => {
-    if (!profA) return history[0];
+    if (!profA) {
+      if (history[0]) return history[0];
+      return {
+        id: 'default-a',
+        subjectName: 'Subjek A',
+        timestamp: new Date().toISOString(),
+        dominantMizaj: 'sanguinis' as const,
+        mizajScores: { sanguinis: 40, koleris: 25, melankolis: 20, flegmatis: 15 },
+        iTidalStatus: "Mu'tadil (Seimbang)",
+        overallSummary: {
+          naturalInclination: 'Karakter seimbang dengan adaptabilitas tinggi dan keluhuran budi.',
+          primaryStrengths: ['Komunikatif', 'Fleksibel', 'Kecerdasan Diplomasi'],
+          potentialWeaknesses: ['Perlu fokus tujuan jangka panjang']
+        }
+      } as unknown as FirasatAnalysisResult;
+    }
     const match = history.find(h => h.profileId === profA.id);
     if (match) return match;
     // Fallback pseudo scan for profile if not scanned yet
@@ -112,7 +127,23 @@ export const ProfileComparisonChart: React.FC<ProfileComparisonChartProps> = ({
   }, [profA, history]);
 
   const scanB = useMemo(() => {
-    if (!profB) return history[1] || history[0];
+    if (!profB) {
+      if (history[1]) return history[1];
+      if (history[0]) return history[0];
+      return {
+        id: 'default-b',
+        subjectName: 'Subjek B',
+        timestamp: new Date().toISOString(),
+        dominantMizaj: 'koleris' as const,
+        mizajScores: { sanguinis: 20, koleris: 48, melankolis: 18, flegmatis: 14 },
+        iTidalStatus: 'Koleris Ghalib (Tegas & Aktif)',
+        overallSummary: {
+          naturalInclination: 'Karakter tegas berorientasi pada hasil dan keteguhan visi.',
+          primaryStrengths: ['Ketegasan memimpin', 'Pemberani', 'Eksekutor Tangguh'],
+          potentialWeaknesses: ['Perlu memperhalus intonasi bicara']
+        }
+      } as unknown as FirasatAnalysisResult;
+    }
     const match = history.find(h => h.profileId === profB.id);
     if (match) return match;
     return {

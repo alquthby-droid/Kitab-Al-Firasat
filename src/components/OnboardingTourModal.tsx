@@ -21,7 +21,7 @@ import { sound } from '../services/sound';
 interface OnboardingTourModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigateTab: (tabId: 'scanner' | 'manual' | 'trends' | 'compare' | 'database') => void;
+  onNavigateTab: (tabId: 'scanner' | 'challenge' | 'manual' | 'trends' | 'compare' | 'database') => void;
 }
 
 interface TourStep {
@@ -30,7 +30,7 @@ interface TourStep {
   arabicHeader: string;
   description: string;
   icon: React.ReactNode;
-  tabTarget?: 'scanner' | 'manual' | 'trends' | 'compare' | 'database';
+  tabTarget?: 'scanner' | 'challenge' | 'manual' | 'trends' | 'compare' | 'database';
   keyHighlights: string[];
   themeColor: string;
 }

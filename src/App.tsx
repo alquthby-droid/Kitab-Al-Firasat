@@ -10,6 +10,7 @@ import { ProfileComparisonChart } from './components/ProfileComparisonChart';
 import { CharacterTrendsDashboard } from './components/CharacterTrendsDashboard';
 import { VoiceAnalysisModal } from './components/VoiceAnalysisModal';
 import { OnboardingTourModal } from './components/OnboardingTourModal';
+import { ChallengeMode } from './components/ChallengeMode';
 import { FirasatAnalysisResult, SubjectProfile, PeriodicNotification } from './types/firasat';
 import { indexedDbCache } from './services/indexedDbCache';
 import { 
@@ -34,7 +35,9 @@ import {
   Sun,
   Moon,
   Mic,
-  GitCompare
+  GitCompare,
+  Bell,
+  ArrowRight
 } from 'lucide-react';
 import { sound } from './services/sound';
 
@@ -61,6 +64,8 @@ export default function App() {
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [dismissedDueBanner, setDismissedDueBanner] = useState<boolean>(false);
+  const alertedNotifIdsRef = React.useRef<Set<string>>(new Set());
 
   // Check if first-time user to show onboarding tour overlay
   useEffect(() => {
@@ -142,42 +147,61 @@ export default function App() {
     refreshData();
   }, [refreshData]);
 
-  // Periodic reminder notification check (triggers browser Notification if due today)
+  // Periodic reminder notification check (triggers browser Notification and in-app alert if due today or overdue)
   useEffect(() => {
     const checkDueReminders = () => {
-      const today = new Date().toDateString();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
       const dueItems = notifications.filter(n => {
         if (n.status !== 'pending') return false;
-        const due = new Date(n.dueDate).toDateString();
-        return due === today;
+        const due = new Date(n.dueDate);
+        due.setHours(0, 0, 0, 0);
+        return due.getTime() <= today.getTime();
       });
 
-      if (dueItems.length > 0 && typeof window !== 'undefined') {
-        try {
-          if ('Notification' in window && typeof Notification !== 'undefined') {
-            let perm: NotificationPermission = 'denied';
-            try {
-              perm = Notification.permission;
-            } catch {
-              perm = 'denied';
-            }
+      if (dueItems.length === 0) return;
 
-            if (perm === 'granted') {
-              dueItems.forEach(item => {
-                try {
-                  new Notification(item.title, {
-                    body: item.message,
-                    icon: '/favicon.ico'
-                  });
-                } catch {
-                  showToast(`🔔 ${item.title}: ${item.message}`);
-                }
-              });
-            }
+      // Filter to items that have not yet alerted this session
+      const unalertedItems = dueItems.filter(item => !alertedNotifIdsRef.current.has(item.id));
+      if (unalertedItems.length === 0) return;
+
+      unalertedItems.forEach(item => alertedNotifIdsRef.current.add(item.id));
+
+      // Audio cue
+      try {
+        sound.playLockPing();
+      } catch {
+        // sound fallback
+      }
+
+      // Try browser Notification API
+      let showedBrowserNotif = false;
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        try {
+          if (Notification.permission === 'granted') {
+            unalertedItems.forEach(item => {
+              try {
+                new Notification(`Peringatan Firasat: ${item.title}`, {
+                  body: item.message || 'Jadwal evaluasi berkala karakter telah jatuh tempo.',
+                  icon: '/favicon.ico'
+                });
+                showedBrowserNotif = true;
+              } catch {
+                // browser blocked or threw
+              }
+            });
           }
-        } catch (notifErr) {
-          console.warn('Browser notification restricted:', notifErr);
+        } catch {
+          // sandbox iframe limitation
         }
+      }
+
+      // In-app alert fallback
+      if (!showedBrowserNotif || unalertedItems.length > 0) {
+        const first = unalertedItems[0];
+        const extra = unalertedItems.length > 1 ? ` (+${unalertedItems.length - 1} lainnya)` : '';
+        showToast(`🔔 Peringatan Evaluasi: ${first.title}${extra}`);
       }
     };
 
@@ -224,6 +248,14 @@ export default function App() {
   };
 
   const pendingNotifsCount = notifications.filter(n => n.status === 'pending').length;
+  const dueNotifications = notifications.filter(n => {
+    if (n.status !== 'pending') return false;
+    const due = new Date(n.dueDate);
+    due.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return due.getTime() <= today.getTime();
+  });
 
   return (
     <div className={`min-h-screen flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200 transition-colors duration-300 ${
@@ -245,10 +277,58 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Urgent Due Reminders Banner */}
+        {!dismissedDueBanner && dueNotifications.length > 0 && activeTab !== 'notifications' && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-amber-950/20 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                <Bell className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-amber-200">
+                  {dueNotifications.length} Jadwal Evaluasi Karakter Menunggu Peninjauan
+                </h4>
+                <p className="text-xs text-amber-300/80">
+                  Subjek <span className="font-semibold text-amber-100">{dueNotifications[0].profileName}</span> telah mencapai tanggal evaluasi berkala untuk pemantauan kestabilan mizaj.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+              <button
+                onClick={() => {
+                  sound.playClick();
+                  setActiveTab('notifications');
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+              >
+                <span>Buka Jadwal</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => {
+                  sound.playClick();
+                  setDismissedDueBanner(true);
+                }}
+                className="p-1.5 rounded-xl text-stone-400 hover:text-stone-200 hover:bg-stone-800/60 transition-colors cursor-pointer"
+                title="Tutup pemberitahuan"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
         {activeTab === 'scanner' && (
           <FaceScanner
             profiles={profiles}
             onAnalysisComplete={handleAnalysisComplete}
+            onNavigateToTab={(tab) => setActiveTab(tab as ActiveTab)}
+          />
+        )}
+
+        {activeTab === 'challenge' && (
+          <ChallengeMode
+            onOpenAnalysisResult={(res) => setSelectedResult(res)}
+            onNavigateToTab={(tab) => setActiveTab(tab as ActiveTab)}
           />
         )}
 
@@ -311,20 +391,24 @@ export default function App() {
       )}
 
       {/* Voice Analysis Modal (Bab Ash-Shawt wal-Kalam) */}
-      <VoiceAnalysisModal
-        isOpen={isVoiceModalOpen}
-        onClose={() => setIsVoiceModalOpen(false)}
-        profiles={profiles}
-        onSaveToProfile={handleSaveVoiceNote}
-      />
+      {isVoiceModalOpen && (
+        <VoiceAnalysisModal
+          isOpen={isVoiceModalOpen}
+          onClose={() => setIsVoiceModalOpen(false)}
+          profiles={profiles}
+          onSaveToProfile={handleSaveVoiceNote}
+        />
+      )}
 
       {/* Modal Detailed Analysis Result */}
-      <AnalysisResultModal
-        result={selectedResult}
-        profiles={profiles}
-        onClose={() => setSelectedResult(null)}
-        onRefreshData={refreshData}
-      />
+      {selectedResult && (
+        <AnalysisResultModal
+          result={selectedResult}
+          profiles={profiles}
+          onClose={() => setSelectedResult(null)}
+          onRefreshData={refreshData}
+        />
+      )}
 
       {/* About & Ethical Guide Modal */}
       {isAboutOpen && (
@@ -399,11 +483,13 @@ export default function App() {
       )}
 
       {/* Interactive Onboarding Tour Modal */}
-      <OnboardingTourModal
-        isOpen={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
-        onNavigateTab={(tab) => setActiveTab(tab)}
-      />
+      {isOnboardingOpen && (
+        <OnboardingTourModal
+          isOpen={isOnboardingOpen}
+          onClose={() => setIsOnboardingOpen(false)}
+          onNavigateTab={(tab) => setActiveTab(tab)}
+        />
+      )}
 
       {/* Footer */}
       <footer className="border-t border-stone-900 bg-stone-950/80 py-4 text-center text-xs text-stone-500 transition-colors">

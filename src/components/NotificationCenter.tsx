@@ -33,10 +33,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 }) => {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
-  const [selectedProfileId, setSelectedProfileId] = useState<string>(profiles[0]?.id || '');
+  const [selectedProfileId, setSelectedProfileId] = useState<string>(profiles[0]?.id || 'manual');
+  const [customSubjectName, setCustomSubjectName] = useState<string>('');
   const [intervalDays, setIntervalDays] = useState<number>(14);
   const [customNote, setCustomNote] = useState<string>('Evaluasi berkala kestabilan karakter dan ketenangan raut wajah.');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [permissionNotice, setPermissionNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -45,6 +47,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   }, []);
 
   const requestBrowserNotification = async () => {
+    sound.playClick();
     try {
       if (typeof window !== 'undefined' && 'Notification' in window) {
         let perm: NotificationPermission = 'default';
@@ -57,6 +60,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         }
 
         if (perm === 'granted') {
+          setPermissionNotice('Notifikasi peramban berhasil diaktifkan!');
           try {
             new Notification('Notifikasi Al-Firasat Diaktifkan', {
               body: 'Anda akan menerima pengingat berkala untuk meninjau perkembangan karakter subjek.',
@@ -65,8 +69,13 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           } catch {
             // fallback handled
           }
+        } else {
+          setPermissionNotice('Notifikasi peramban dibatasi oleh izin peramban/iframe, namun sistem pengingat otomatis dalam aplikasi senantiasa aktif!');
         }
+      } else {
+        setPermissionNotice('Sistem pengingat dalam aplikasi (suara & peringatan jatuh tempo) senantiasa aktif otomatis.');
       }
+      setTimeout(() => setPermissionNotice(null), 5500);
     } catch (err) {
       console.warn('Notification setup notice:', err);
     }
@@ -75,18 +84,20 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const handleCreateReminder = async (e: React.FormEvent) => {
     e.preventDefault();
     const prof = profiles.find(p => p.id === selectedProfileId);
-    if (!prof) return;
+    const finalName = prof ? prof.name : (customSubjectName.trim() || 'Subjek Pemantauan');
+    const finalProfId = prof ? prof.id : 'custom-' + Date.now();
 
     setIsSubmitting(true);
     try {
       await scheduleNotification({
-        profileId: prof.id,
-        profileName: prof.name,
+        profileId: finalProfId,
+        profileName: finalName,
         days: intervalDays,
-        title: `Pemantauan Firasat: ${prof.name}`,
+        title: `Pemantauan Firasat: ${finalName}`,
         message: customNote
       });
       setShowAddModal(false);
+      setCustomSubjectName('');
       onRefreshData();
       sound.playLockPing();
     } catch (err) {
@@ -136,15 +147,20 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {notificationPermission !== 'granted' && (
+        <div className="flex flex-wrap items-center gap-2">
+          {notificationPermission !== 'granted' ? (
             <button
               onClick={requestBrowserNotification}
-              className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Bell className="w-3.5 h-3.5 text-amber-400" />
               <span>Izinkan Notifikasi Peramban</span>
             </button>
+          ) : (
+            <span className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Notifikasi Peramban Aktif</span>
+            </span>
           )}
 
           <button
@@ -156,6 +172,19 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Permission Feedback Notice */}
+      {permissionNotice && (
+        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-center justify-between gap-2 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Info className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>{permissionNotice}</span>
+          </div>
+          <button onClick={() => setPermissionNotice(null)} className="text-stone-400 hover:text-white cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Ar-Razi Insight Card */}
       <div className="rounded-2xl bg-amber-950/20 border border-amber-800/30 p-4 sm:p-5 flex items-start gap-3.5">
@@ -246,15 +275,21 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   </div>
 
                   <div className="pt-2 border-t border-stone-800/60 flex items-center justify-between gap-2">
-                    {matchedProfile && (
-                      <button
-                        onClick={() => onNavigateToScanProfile(matchedProfile)}
-                        className="py-1.5 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-semibold flex items-center gap-1.5 border border-amber-500/30 transition-colors"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Pindai Ulang Sekarang</span>
-                      </button>
-                    )}
+                    <button
+                      onClick={() => onNavigateToScanProfile(matchedProfile || {
+                        id: item.profileId,
+                        name: item.profileName,
+                        category: 'Lainnya',
+                        notes: item.message || '',
+                        createdAt: new Date().toISOString(),
+                        analysisCount: 0,
+                        monitoringIntervalDays: 14
+                      })}
+                      className="py-1.5 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-semibold flex items-center gap-1.5 border border-amber-500/30 transition-colors cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Pindai Ulang Sekarang</span>
+                    </button>
 
                     <button
                       onClick={() => handleCompleteNotif(item.id)}
@@ -316,15 +351,32 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 <select
                   value={selectedProfileId}
                   onChange={(e) => setSelectedProfileId(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-950 border border-stone-800 rounded-xl text-xs text-stone-200 focus:outline-none"
+                  className="w-full px-3 py-2 bg-stone-950 border border-stone-800 rounded-xl text-xs text-stone-200 focus:outline-none focus:border-amber-500/50"
                 >
                   {profiles.map(p => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.category})
                     </option>
                   ))}
+                  <option value="manual">+ Masukkan Nama Subjek Baru / Manual</option>
                 </select>
               </div>
+
+              {(selectedProfileId === 'manual' || profiles.length === 0) && (
+                <div>
+                  <label className="block text-xs font-semibold text-stone-300 mb-1">
+                    Nama Subjek Pemantauan
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={customSubjectName}
+                    onChange={(e) => setCustomSubjectName(e.target.value)}
+                    placeholder="Contoh: Zaid bin Tsabit / Mitra Bisnis..."
+                    className="w-full px-3 py-2 bg-stone-950 border border-stone-800 rounded-xl text-xs text-stone-200 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-stone-300 mb-1">

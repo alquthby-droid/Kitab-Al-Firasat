@@ -32,7 +32,7 @@ export type CardFormat = 'square' | 'story' | 'landscape';
 export type CardTheme = 'obsidian' | 'parchment' | 'elemental';
 
 interface ShareAnalysisModalProps {
-  result: FirasatAnalysisResult | null;
+  result: FirasatAnalysisResult;
   onClose: () => void;
 }
 
@@ -40,8 +40,6 @@ export const ShareAnalysisModal: React.FC<ShareAnalysisModalProps> = ({
   result,
   onClose
 }) => {
-  if (!result) return null;
-
   const [format, setFormat] = useState<CardFormat>('square');
   const [theme, setTheme] = useState<CardTheme>('obsidian');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
