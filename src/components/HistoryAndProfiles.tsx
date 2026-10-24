@@ -32,7 +32,8 @@ import {
   Wind,
   Mountain,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  FileSpreadsheet
 } from 'lucide-react';
 import { FirasatAnalysisResult, SubjectProfile, TemperamentType } from '../types/firasat';
 import { MIZAJ_DATA } from '../data/kitabFirasatData';
@@ -44,6 +45,7 @@ import { toHijri } from '../services/hijriCalendar';
 import { exportBackupToJson, importBackupFromJson } from '../services/dataBackup';
 import { ProfileComparisonChart } from './ProfileComparisonChart';
 import { ShareAnalysisModal } from './ShareAnalysisModal';
+import { GoogleSheetsModal } from './GoogleSheetsModal';
 
 interface HistoryAndProfilesProps {
   profiles: SubjectProfile[];
@@ -82,6 +84,7 @@ export const HistoryAndProfiles: React.FC<HistoryAndProfilesProps> = ({
   const [newProfileInterval, setNewProfileInterval] = useState<number>(14);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [shareTargetResult, setShareTargetResult] = useState<FirasatAnalysisResult | null>(null);
+  const [isGoogleSheetsModalOpen, setIsGoogleSheetsModalOpen] = useState<boolean>(false);
 
   // In-app deletion confirmation state (100% iframe-safe, no blocked window.confirm)
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -402,6 +405,18 @@ export const HistoryAndProfiles: React.FC<HistoryAndProfilesProps> = ({
             >
               <Plus className="w-4 h-4" />
               <span>Daftarkan Profil</span>
+            </button>
+
+            <button
+              onClick={() => {
+                sound.playClick();
+                setIsGoogleSheetsModalOpen(true);
+              }}
+              title="Ekspor & Sinkronkan ke Google Sheets"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 hover:text-emerald-200 border border-emerald-500/40 text-xs font-semibold transition-all shadow-md shadow-emerald-950/20 cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <span>Google Sheets</span>
             </button>
 
             <button
@@ -1487,6 +1502,17 @@ export const HistoryAndProfiles: React.FC<HistoryAndProfilesProps> = ({
             </div>
           </div>
         </div>
+      )}
+      {/* Google Sheets Modal */}
+      {isGoogleSheetsModalOpen && (
+        <GoogleSheetsModal
+          isOpen={isGoogleSheetsModalOpen}
+          onClose={() => setIsGoogleSheetsModalOpen(false)}
+          profiles={profiles}
+          history={history}
+          onShowToast={(msg) => setBackupMessage({ type: 'success', text: msg })}
+          onRefreshData={onRefreshData}
+        />
       )}
     </div>
   );

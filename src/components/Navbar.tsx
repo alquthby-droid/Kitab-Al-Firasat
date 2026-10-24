@@ -15,7 +15,8 @@ import {
   GitCompare,
   TrendingUp,
   HelpCircle,
-  Target
+  Target,
+  FileSpreadsheet
 } from 'lucide-react';
 import { sound } from '../services/sound';
 import { OfflineStatusBadge } from './OfflineStatusBadge';
@@ -32,6 +33,7 @@ interface NavbarProps {
   onOpenAbout: () => void;
   onOpenVoiceModal: () => void;
   onOpenOnboardingTour?: () => void;
+  onOpenGoogleSheets?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -43,7 +45,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleTheme,
   onOpenAbout,
   onOpenVoiceModal,
-  onOpenOnboardingTour
+  onOpenOnboardingTour,
+  onOpenGoogleSheets
 }) => {
   const [isMuted, setIsMuted] = React.useState(sound.getMuted());
 
@@ -123,6 +126,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* IndexedDB Offline Cache Badge */}
             <OfflineStatusBadge />
+
+            {/* Google Sheets Sync Button */}
+            {onOpenGoogleSheets && (
+              <button
+                onClick={onOpenGoogleSheets}
+                title="Integrasi & Sinkronisasi Google Sheets"
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">Google Sheets</span>
+              </button>
+            )}
 
             {/* Quick Voice Analysis Button */}
             <button

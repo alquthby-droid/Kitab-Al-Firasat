@@ -24,12 +24,15 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
-  Minimize2
+  Minimize2,
+  FileSpreadsheet,
+  CloudLightning
 } from 'lucide-react';
 import { FirasatAnalysisResult, SubjectProfile } from '../types/firasat';
 import { SAMPLE_PORTRAITS } from '../data/kitabFirasatData';
 import { analyzeFace } from '../services/api';
 import { sound } from '../services/sound';
+import { getAutoSyncSettings } from '../services/googleSheets';
 
 export interface SmartTipState {
   status: 'optimal' | 'guidance' | 'warning';
@@ -1413,6 +1416,20 @@ export const FaceScanner: React.FC<FaceScannerProps> = ({
                 *Imam Ar-Razi menguraikan bahwa watak alami manusia bergeser secara bertahap seiring 4 tahapan usia.
               </p>
             </div>
+
+            {/* Auto-Sync to Google Sheets 'Al-Firasat Records' status indicator */}
+            {getAutoSyncSettings().enabled && (
+              <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex items-center justify-between text-xs text-emerald-300">
+                <div className="flex items-center gap-2">
+                  <CloudLightning className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  <div>
+                    <span className="font-bold block text-emerald-200">Auto-Sync Google Sheets Aktif</span>
+                    <span className="text-[10px] text-stone-400">Hasil pemindaian otomatis ditambahkan ke tab 'Al-Firasat Records'</span>
+                  </div>
+                </div>
+                <FileSpreadsheet className="w-4 h-4 text-emerald-400/80 shrink-0" />
+              </div>
+            )}
           </div>
 
           {/* Sample Selectors if in Samples Mode */}

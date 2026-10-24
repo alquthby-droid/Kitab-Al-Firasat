@@ -14,19 +14,51 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
       // Suppress benign Vite dev WebSocket / HMR connection drops in iframe/Cloud Run environments
-      window.addEventListener('unhandledrejection', function(event) {
-        var reason = event.reason;
-        var msg = (reason && (reason.message || reason.stack || String(reason))) || '';
-        if (msg.indexOf('WebSocket') !== -1 || msg.indexOf('@vite/client') !== -1 || msg.indexOf('websocket') !== -1) {
-          event.preventDefault();
+      (function() {
+        function isViteWs(str) {
+          if (!str) return false;
+          var s = String(str);
+          return s.indexOf('WebSocket') !== -1 || 
+                 s.indexOf('websocket') !== -1 || 
+                 s.indexOf('@vite/client') !== -1 || 
+                 s.indexOf('[vite]') !== -1 ||
+                 s.indexOf('ditutup tanpa dibuka') !== -1 ||
+                 s.indexOf('closed without being opened') !== -1;
         }
-      });
-      window.addEventListener('error', function(event) {
-        var msg = ((event.message || '') + ' ' + (event.filename || ''));
-        if (msg.indexOf('WebSocket') !== -1 || msg.indexOf('@vite/client') !== -1 || msg.indexOf('websocket') !== -1) {
-          event.preventDefault();
-        }
-      });
+
+        var origConsoleError = console.error;
+        console.error = function() {
+          for (var i = 0; i < arguments.length; i++) {
+            if (isViteWs(arguments[i])) return;
+          }
+          return origConsoleError.apply(console, arguments);
+        };
+
+        var origConsoleWarn = console.warn;
+        console.warn = function() {
+          for (var i = 0; i < arguments.length; i++) {
+            if (isViteWs(arguments[i])) return;
+          }
+          return origConsoleWarn.apply(console, arguments);
+        };
+
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event && (event.reason || event);
+          var msg = (reason && (reason.message || reason.stack || String(reason))) || '';
+          if (isViteWs(msg)) {
+            event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+          }
+        }, true);
+
+        window.addEventListener('error', function(event) {
+          var msg = ((event.message || '') + ' ' + (event.filename || '') + ' ' + (event.error ? String(event.error) : ''));
+          if (isViteWs(msg)) {
+            event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+          }
+        }, true);
+      })();
     </script>
   </head>
   <body class="bg-stone-950 text-stone-100 antialiased selection:bg-amber-500/30 selection:text-amber-200">

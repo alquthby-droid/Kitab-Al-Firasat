@@ -11,6 +11,10 @@ import { CharacterTrendsDashboard } from './components/CharacterTrendsDashboard'
 import { VoiceAnalysisModal } from './components/VoiceAnalysisModal';
 import { OnboardingTourModal } from './components/OnboardingTourModal';
 import { ChallengeMode } from './components/ChallengeMode';
+import { GoogleSheetsModal } from './components/GoogleSheetsModal';
+import { FirasatOfTheDay } from './components/FirasatOfTheDay';
+import { appendAnalysisRecordToDedicatedSheet, getAutoSyncSettings } from './services/googleSheets';
+import { getAccessToken } from './services/googleAuth';
 import { FirasatAnalysisResult, SubjectProfile, PeriodicNotification } from './types/firasat';
 import { indexedDbCache } from './services/indexedDbCache';
 import { 
@@ -63,6 +67,7 @@ export default function App() {
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
+  const [isGoogleSheetsModalOpen, setIsGoogleSheetsModalOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [dismissedDueBanner, setDismissedDueBanner] = useState<boolean>(false);
   const alertedNotifIdsRef = React.useRef<Set<string>>(new Set());
@@ -216,10 +221,27 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleAnalysisComplete = (res: FirasatAnalysisResult) => {
+  const handleAnalysisComplete = async (res: FirasatAnalysisResult) => {
     setSelectedResult(res);
     refreshData();
     showToast(`Analisis ${res.subjectName} berhasil diselesaikan!`);
+
+    // Automatic sync to dedicated 'Al-Firasat Records' in Google Sheets
+    try {
+      const autoSync = getAutoSyncSettings();
+      if (autoSync.enabled && autoSync.spreadsheetId) {
+        const token = await getAccessToken();
+        if (token) {
+          showToast(`☁️ Menyinkronkan ke 'Al-Firasat Records' Google Sheets...`);
+          await appendAnalysisRecordToDedicatedSheet(token, autoSync.spreadsheetId, res, 'Al-Firasat Records');
+          showToast(`☁️ Analisis ${res.subjectName} tersinkron ke 'Al-Firasat Records'!`);
+          sound.playSuccessChime();
+        }
+      }
+    } catch (syncErr: any) {
+      console.warn('Auto-sync to Google Sheets failed:', syncErr);
+      showToast('⚠️ Gagal auto-sync ke Google Sheets. Pastikan sesi akun Google Anda aktif.');
+    }
   };
 
   const handleScanProfile = (profile: SubjectProfile) => {
@@ -273,6 +295,7 @@ export default function App() {
         onOpenAbout={() => setIsAboutOpen(true)}
         onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
         onOpenOnboardingTour={() => setIsOnboardingOpen(true)}
+        onOpenGoogleSheets={() => setIsGoogleSheetsModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -318,11 +341,17 @@ export default function App() {
           </div>
         )}
         {activeTab === 'scanner' && (
-          <FaceScanner
-            profiles={profiles}
-            onAnalysisComplete={handleAnalysisComplete}
-            onNavigateToTab={(tab) => setActiveTab(tab as ActiveTab)}
-          />
+          <div className="space-y-6">
+            <FirasatOfTheDay
+              onNavigateToLibrary={() => setActiveTab('library')}
+              onShowToast={showToast}
+            />
+            <FaceScanner
+              profiles={profiles}
+              onAnalysisComplete={handleAnalysisComplete}
+              onNavigateToTab={(tab) => setActiveTab(tab as ActiveTab)}
+            />
+          </div>
         )}
 
         {activeTab === 'challenge' && (
@@ -488,6 +517,18 @@ export default function App() {
           isOpen={isOnboardingOpen}
           onClose={() => setIsOnboardingOpen(false)}
           onNavigateTab={(tab) => setActiveTab(tab)}
+        />
+      )}
+
+      {/* Google Sheets Sync Modal */}
+      {isGoogleSheetsModalOpen && (
+        <GoogleSheetsModal
+          isOpen={isGoogleSheetsModalOpen}
+          onClose={() => setIsGoogleSheetsModalOpen(false)}
+          profiles={profiles}
+          history={history}
+          onShowToast={showToast}
+          onRefreshData={refreshData}
         />
       )}
 
